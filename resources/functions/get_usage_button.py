@@ -1,180 +1,194 @@
 """
-title: Usage Info Button / 计费信息按钮
-author: fl0w1nd
-author_url: https://github.com/fl0w1nd
-version: 0.1.2
+title: Usage Monitor Button (v2)
+author: VariantConst & OVINC CN (ported w/ button)
+version: 0.4.0
 icon_url: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAACMElEQVR4nO2ZMWgUQRSGJ4mFgZBGQTAgCqawSbASg6YIFkEsPbCQHNzd/v/sHBe4IvUSUtqlThcCSZEiXUharWxURC20SDCQIGKMxjTBk4E7MhlO7naX3M7C/PCamZud9817M/NuVwgvLy8vZ0VylOQ6ySOSjR7bEYA1kiNpnP+egeMNy74lgmiufMMRW00CkEXaNP5jh0kAzj1E9FhMO78HSCn6CDBeDsbdmM5FgB7gvHwEmPE9kFoeIGvRp1B6AXgOAEqpoVxGAMCenhvAjdiDPUAKlcvlayQJ4FczArO1Wm04FxEAUCV53O6vJYBppwGklKUONdWJlPKukwBRFF0iuW/NuwLgpdkGYMtJAAD3rTnXW2AAvhjtp9Vq9YqLAAVrpecMXxatvknnAEg+tZycb/VJKZ+R3G4ZgAfOAYRhOGYBHJC8mfiBGZxCfSQ/WhBfpZRPEj0to2P0Ybs7AMCmUup2Li6yIAgmrFOnBfFH74Vc1ELFYvGyPoWaL3ZNP05JPs5TMXcVwIYViU96v3Qz+GfcVyVxLE40SL43x4ZheKcbgLVeApD8bazyG6tvwRrfOY30R4U2OXiRAJ+N/h9RFPUbi/nCHBsEwSPRjUql0nX9ceEi0qkNwLL1mxndXq/XBwF8MPsqlcot4ZqklFMWwF+SrwDsWu2vhasCsNQhcicA7glXVSgUBnQRZ25oY2O/1SW3yIOUUkMAKk3nd0iOi7wpPKtO32XtSyJ1C/APUWkkXC3hgzUAAAAASUVORK5CYII=
 required_open_webui_version: 0.4.0
+requirements: pydantic
+license: MIT
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, Union, Generator, Iterator
-
 import os
-import requests
-import asyncio
 import json
+from typing import Optional
+from pydantic import BaseModel, Field
+
+TRANSLATIONS = {
+    "en": {
+        "no_assistant": "No assistant message found",
+        "no_message_id": "Unable to get message ID",
+        "no_record": "No billing record found for this message",
+        "read_failed": "Failed to read the stats file: {err}",
+        "cost": "Cost: ${cost:.6f}",
+        "balance": "Balance: ${balance:.6f}",
+        "tokens": "Tokens: {input}+{output}",
+        "time": "Time: {elapsed:.2f}s",
+        "tps": "{tps:.2f} T/s",
+    },
+    "zh": {
+        "no_assistant": "没有找到assistant消息",
+        "no_message_id": "无法获取消息ID",
+        "no_record": "未查找到该消息的计费记录，请联系管理员",
+        "read_failed": "读取统计文件失败: {err}",
+        "cost": "费用: ¥{cost:.6f}",
+        "balance": "余额: ¥{balance:.6f}",
+        "tokens": "Token: {input}+{output}",
+        "time": "耗时: {elapsed:.2f}s",
+        "tps": "{tps:.2f} T/s",
+    },
+}
 
 
 class Action:
     class Valves(BaseModel):
+        language: str = Field(
+            default="zh",
+            description="language (en/zh)",
+            json_schema_extra={"ui:group": "显示设置"},
+        )
         show_cost: bool = Field(
             default=True,
-            description="Show cost / 是否显示费用 / Mostrar costo",
-            json_schema_extra={
-                "ui:group": "Display Settings / 显示设置 / Configuración de Visualización"
-            },
+            description="是否显示费用 / Show cost",
+            json_schema_extra={"ui:group": "显示设置"},
         )
         show_balance: bool = Field(
             default=True,
-            description="Show balance / 是否显示余额 / Mostrar saldo",
-            json_schema_extra={
-                "ui:group": "Display Settings / 显示设置 / Configuración de Visualización"
-            },
+            description="是否显示余额 / Show balance",
+            json_schema_extra={"ui:group": "显示设置"},
         )
         show_tokens: bool = Field(
             default=True,
-            description="Show tokens / 是否显示token数 / Mostrar tokens",
-            json_schema_extra={
-                "ui:group": "Display Settings / 显示设置 / Configuración de Visualización"
-            },
+            description="是否显示token数 / Show tokens",
+            json_schema_extra={"ui:group": "显示设置"},
+        )
+        show_time_spent: bool = Field(
+            default=True,
+            description="是否显示耗时 / Show time spent",
+            json_schema_extra={"ui:group": "显示设置"},
         )
         show_tokens_per_sec: bool = Field(
             default=True,
-            description="Show tokens per second / 是否显示每秒输出token数 / Mostrar tokens por segundo",
-            json_schema_extra={
-                "ui:group": "Display Settings / 显示设置 / Configuración de Visualización"
-            },
+            description="是否显示每秒输出token数 / Show output tokens/sec",
+            json_schema_extra={"ui:group": "显示设置"},
         )
 
     def __init__(self):
         self.valves = self.Valves()
-        pass
+
+    @staticmethod
+    def _record_dir() -> str:
+        return "/app/backend/data/record"
+
+    def _t(self, key: str, **kwargs) -> str:
+        lang = self.valves.language if self.valves.language in TRANSLATIONS else "en"
+        text = TRANSLATIONS[lang].get(key, TRANSLATIONS["en"][key])
+        return text.format(**kwargs) if kwargs else text
 
     async def action(
         self,
         body: dict,
-        __user__=None,
+        user: Optional[dict] = None,
         __event_emitter__=None,
         __event_call__=None,
     ) -> Optional[dict]:
-        print(f"action:{__name__}")
-
-        # 查找最新一条assistant消息的索引和内容
+        """
+        Reads /app/backend/data/record/{last_assistant_message_id}.json
+        and pushes a one-line status to the UI.
+        """
+        # Locate last assistant message
         messages = body.get("messages", [])
         assistant_indexes = [
-            i for i, msg in enumerate(messages) if msg.get("role") == "assistant"
+            i for i, m in enumerate(messages) if m.get("role") == "assistant"
         ]
-
         if not assistant_indexes:
             if __event_emitter__:
                 await __event_emitter__(
                     {
                         "type": "status",
-                        "data": {
-                            "description": "No assistant message found / 没有找到assistant消息 / No se encontró mensaje del asistente",
-                            "done": True,
-                        },
+                        "data": {"description": self._t("no_assistant"), "done": True},
                     }
                 )
             return None
 
-        # 获取最后一条assistant消息的索引和内容
-        last_assistant_index = assistant_indexes[-1]
-        last_assistant_message = messages[last_assistant_index]
-
-        # 获取消息 ID
-        message_id = last_assistant_message.get("id")
-
+        last_assistant = messages[assistant_indexes[-1]]
+        message_id = last_assistant.get("id")
         if not message_id:
             if __event_emitter__:
                 await __event_emitter__(
                     {
                         "type": "status",
-                        "data": {
-                            "description": "Unable to get message ID / 无法获取消息ID / No se puede obtener el ID del mensaje",
-                            "done": True,
-                        },
+                        "data": {"description": self._t("no_message_id"), "done": True},
                     }
                 )
             return None
 
-        # 构建文件路径
-        file_path = os.path.join("/app/backend/data/record", f"{message_id}.json")
-
-        # 检查文件是否存在
+        # Read record
+        file_path = os.path.join(self._record_dir(), f"{message_id}.json")
         if not os.path.exists(file_path):
             if __event_emitter__:
                 await __event_emitter__(
                     {
                         "type": "status",
-                        "data": {
-                            "description": f"Billing record not found, please contact admin / 未查找到该消息的计费记录，请联系管理员 / Registro de facturación no encontrado, contacte al administrador",
-                            "done": True,
-                        },
+                        "data": {"description": self._t("no_record"), "done": True},
                     }
                 )
             return None
 
-        # 读取统计信息
         try:
-            with open(file_path, "r") as f:
-                stats_data = json.load(f)
+            with open(file_path, "r", encoding="utf-8") as f:
+                stats = json.load(f)
         except Exception as e:
             if __event_emitter__:
                 await __event_emitter__(
                     {
                         "type": "status",
                         "data": {
-                            "description": f"Failed to read stats file / 读取统计文件失败 / Error al leer archivo de estadísticas: {str(e)}",
+                            "description": self._t("read_failed", err=str(e)),
                             "done": True,
                         },
                     }
                 )
             return None
 
-        # 构建状态栏显示的统计信息
-        stats_array = []
+        parts = []
 
-        if self.valves.show_cost and "total_cost" in stats_data:
-            stats_array.append(f"Cost: ${stats_data['total_cost']:.6f}")
-        if self.valves.show_balance and "new_balance" in stats_data:
-            stats_array.append(f"Balance: ${stats_data['new_balance']:.6f}")
         if (
             self.valves.show_tokens
-            and "input_tokens" in stats_data
-            and "output_tokens" in stats_data
+            and "input_tokens" in stats
+            and "output_tokens" in stats
         ):
-            stats_array.append(
-                f"Token: {stats_data['input_tokens']}+{stats_data['output_tokens']}"
+            parts.append(
+                self._t(
+                    "tokens", input=stats["input_tokens"], output=stats["output_tokens"]
+                )
             )
 
-        # 计算耗时（如果有elapsed_time）
-        if "elapsed_time" in stats_data:
-            elapsed_time = stats_data["elapsed_time"]
-            stats_array.append(f"Time: {elapsed_time:.2f}s")
+        if self.valves.show_cost and "total_cost" in stats:
+            parts.append(self._t("cost", cost=stats["total_cost"]))
 
-            # 计算每秒输出速度
+        if self.valves.show_balance and "new_balance" in stats:
+            parts.append(self._t("balance", balance=stats["new_balance"]))
+
+        if self.valves.show_time_spent and "elapsed_time" in stats:
+            elapsed = stats["elapsed_time"]
+            parts.append(self._t("time", elapsed=elapsed))
+
             if (
                 self.valves.show_tokens_per_sec
-                and "output_tokens" in stats_data
-                and elapsed_time > 0
+                and "output_tokens" in stats
+                and elapsed
+                and elapsed > 0
             ):
-                stats_array.append(
-                    f"{(stats_data['output_tokens'] / elapsed_time):.2f} T/s"
-                )
+                tps = stats["output_tokens"] / elapsed
+                parts.append(self._t("tps", tps=tps))
 
-        stats = " | ".join(stat for stat in stats_array)
+        line = " | ".join(parts)
 
-        # 发送状态更新
         if __event_emitter__:
             await __event_emitter__(
                 {
                     "type": "status",
-                    "data": {
-                        "description": stats,
-                        "done": True,
-                    },
+                    "data": {"description": line, "done": True},
                 }
             )
 
