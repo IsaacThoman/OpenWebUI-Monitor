@@ -122,14 +122,18 @@
             "inputPrice": "输入价格 ¥ / M tokens",
             "outputPrice": "输出价格 ¥ / M tokens",
             "perMsgPrice": "每条消息价格 ¥ / 条",
+            "useApiCost": "使用API费用",
             "notSet": "未设置",
             "mobile": {
                 "inputPrice": "输入价格",
                 "outputPrice": "输出价格",
-                "perMsgPrice": "每条消息"
+                "perMsgPrice": "每条消息",
+                "useApiCost": "使用API费用"
             },
             "perMsgPriceTooltip": "每条消息的固定收费，如果设置为负数则按 token 计费",
+            "useApiCostTooltip": "使用API提供的费用值，而不是根据token价格计算",
             "priceOverriddenByPerMsg": "已被每条消息价格覆盖",
+            "priceOverriddenByApiCost": "已被API费用覆盖",
             "enterPrice": "输入价格"
         },
         "testing": "测试中",

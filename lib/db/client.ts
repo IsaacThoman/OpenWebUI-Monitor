@@ -210,6 +210,7 @@ export async function ensureTablesExist() {
           input_price NUMERIC(10, 6) DEFAULT ${defaultInputPrice},
           output_price NUMERIC(10, 6) DEFAULT ${defaultOutputPrice},
           per_msg_price NUMERIC(10, 6) DEFAULT ${defaultPerMsgPrice},
+          use_api_cost BOOLEAN DEFAULT FALSE,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
       `)
@@ -244,6 +245,22 @@ export async function ensureTablesExist() {
         `)
             } catch (error) {
                 console.error('Error adding base_model_id column:', error)
+            }
+
+            try {
+                await query(`
+          DO $$ 
+          BEGIN 
+            BEGIN
+              ALTER TABLE model_prices 
+              ADD COLUMN use_api_cost BOOLEAN DEFAULT FALSE;
+            EXCEPTION 
+              WHEN duplicate_column THEN NULL;
+            END;
+          END $$;
+        `)
+            } catch (error) {
+                console.error('Error adding use_api_cost column:', error)
             }
         }
 
@@ -294,6 +311,7 @@ export interface ModelPrice {
     input_price: number
     output_price: number
     per_msg_price: number
+    use_api_cost: boolean
     updated_at: Date
 }
 
@@ -389,6 +407,7 @@ export async function getOrCreateModelPrices(
             input_price: Number(row.input_price),
             output_price: Number(row.output_price),
             per_msg_price: Number(row.per_msg_price),
+            use_api_cost: Boolean(row.use_api_cost),
             updated_at: row.updated_at,
         }))
     } catch (error) {
@@ -401,7 +420,8 @@ export async function updateModelPrice(
     id: string,
     input_price: number,
     output_price: number,
-    per_msg_price: number
+    per_msg_price: number,
+    use_api_cost: boolean
 ): Promise<ModelPrice | null> {
     try {
         const result = await query(
@@ -410,10 +430,11 @@ export async function updateModelPrice(
          input_price = CAST($2 AS NUMERIC(10,6)),
          output_price = CAST($3 AS NUMERIC(10,6)),
          per_msg_price = CAST($4 AS NUMERIC(10,6)),
+         use_api_cost = $5,
          updated_at = CURRENT_TIMESTAMP
        WHERE id = $1
        RETURNING *`,
-            [id, input_price, output_price, per_msg_price]
+            [id, input_price, output_price, per_msg_price, use_api_cost]
         )
 
         if (result.rows[0]) {
@@ -423,6 +444,7 @@ export async function updateModelPrice(
                 input_price: Number(result.rows[0].input_price),
                 output_price: Number(result.rows[0].output_price),
                 per_msg_price: Number(result.rows[0].per_msg_price),
+                use_api_cost: Boolean(result.rows[0].use_api_cost),
                 updated_at: result.rows[0].updated_at,
             }
         }

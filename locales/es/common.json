@@ -123,15 +123,19 @@
             "inputPrice": "Precio de Entrada $ / M tokens",
             "outputPrice": "Precio de Salida $ / M tokens",
             "perMsgPrice": "Precio por Mensaje $ / Mensaje",
+            "useApiCost": "Usar Costo de API",
             "notSet": "No Establecido",
             "mobile": {
                 "inputPrice": "Precio de Entrada",
                 "outputPrice": "Precio de Salida",
-                "perMsgPrice": "Por Mensaje"
+                "perMsgPrice": "Por Mensaje",
+                "useApiCost": "Usar Costo API"
             },
             "perMsgPriceTooltip": "Establezca un valor negativo para cobrar por tokens en lugar de por mensaje",
+            "useApiCostTooltip": "Usar el valor de costo proporcionado por la API en lugar de calcularlo desde los precios de tokens",
             "enterPrice": "Ingrese precio",
-            "priceOverriddenByPerMsg": "Sobrescrito por precio por mensaje"
+            "priceOverriddenByPerMsg": "Sobrescrito por precio por mensaje",
+            "priceOverriddenByApiCost": "Sobrescrito por costo de API"
         },
         "testing": "Probando",
         "testComplete": "Prueba Completa",

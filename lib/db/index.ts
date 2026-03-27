@@ -20,6 +20,7 @@ async function ensureModelPricesTableExists() {
       input_price DECIMAL(10, 6) DEFAULT CAST($1 AS DECIMAL(10, 6)),
       output_price DECIMAL(10, 6) DEFAULT CAST($2 AS DECIMAL(10, 6)),
       per_msg_price DECIMAL(10, 6) DEFAULT CAST($3 AS DECIMAL(10, 6)),
+      use_api_cost BOOLEAN DEFAULT FALSE,
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );`,
         [defaultInputPrice, defaultOutputPrice, defaultPerMsgPrice]
@@ -36,6 +37,17 @@ async function ensureModelPricesTableExists() {
       END;
     END $$;`,
         [defaultPerMsgPrice]
+    )
+
+    await query(
+        `DO $$ 
+    BEGIN 
+      BEGIN
+        ALTER TABLE model_prices ADD COLUMN use_api_cost BOOLEAN DEFAULT FALSE;
+      EXCEPTION 
+        WHEN duplicate_column THEN NULL;
+      END;
+    END $$;`
     )
 }
 
@@ -68,6 +80,7 @@ export async function getOrCreateModelPrice(
             input_price: Number(result.rows[0].input_price),
             output_price: Number(result.rows[0].output_price),
             per_msg_price: Number(result.rows[0].per_msg_price),
+            use_api_cost: Boolean(result.rows[0].use_api_cost),
             updated_at: result.rows[0].updated_at,
         }
     } catch (error: any) {

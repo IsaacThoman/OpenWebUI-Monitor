@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Table, message, Tooltip } from 'antd'
+import { Table, message, Tooltip, Switch } from 'antd'
 import {
     DownloadOutlined,
     ExperimentOutlined,
@@ -28,6 +28,7 @@ interface ModelResponse {
     input_price: number
     output_price: number
     per_msg_price: number
+    use_api_cost: boolean
 }
 
 interface Model {
@@ -39,6 +40,7 @@ interface Model {
     input_price: number
     output_price: number
     per_msg_price: number
+    use_api_cost: boolean
     testStatus?: 'success' | 'error' | 'testing'
     syncStatus?: 'syncing' | 'success' | 'error'
 }
@@ -289,6 +291,7 @@ export default function ModelsPage() {
                         input_price: model.input_price ?? 60,
                         output_price: model.output_price ?? 60,
                         per_msg_price: model.per_msg_price ?? -1,
+                        use_api_cost: model.use_api_cost ?? false,
                     }))
                 )
             } catch (err) {
@@ -339,30 +342,37 @@ export default function ModelsPage() {
 
     const handlePriceUpdate = async (
         id: string,
-        field: 'input_price' | 'output_price' | 'per_msg_price',
-        value: number
+        field:
+            | 'input_price'
+            | 'output_price'
+            | 'per_msg_price'
+            | 'use_api_cost',
+        value: number | boolean
     ): Promise<void> => {
         try {
             const model = models.find((m) => m.id === id)
             if (!model) return
 
-            const validValue = Number(value)
-            if (
-                field !== 'per_msg_price' &&
-                (!isFinite(validValue) || validValue < 0)
-            ) {
-                throw new Error(t('error.model.nonePositiveNumber'))
-            }
-            if (field === 'per_msg_price' && !isFinite(validValue)) {
-                throw new Error(t('error.model.invalidNumber'))
+            let input_price = model.input_price
+            let output_price = model.output_price
+            let per_msg_price = model.per_msg_price
+            let use_api_cost = model.use_api_cost
+
+            if (field === 'input_price') {
+                input_price = Number(value)
+            } else if (field === 'output_price') {
+                output_price = Number(value)
+            } else if (field === 'per_msg_price') {
+                per_msg_price = Number(value)
+            } else if (field === 'use_api_cost') {
+                use_api_cost = Boolean(value)
             }
 
-            const input_price =
-                field === 'input_price' ? validValue : model.input_price
-            const output_price =
-                field === 'output_price' ? validValue : model.output_price
-            const per_msg_price =
-                field === 'per_msg_price' ? validValue : model.per_msg_price
+            if (field !== 'per_msg_price' && field !== 'use_api_cost') {
+                if (!isFinite(value as number) || (value as number) < 0) {
+                    throw new Error(t('error.model.nonePositiveNumber'))
+                }
+            }
 
             const token = localStorage.getItem('access_token')
             const response = await fetch('/api/v1/models/price', {
@@ -378,6 +388,7 @@ export default function ModelsPage() {
                             input_price: Number(input_price),
                             output_price: Number(output_price),
                             per_msg_price: Number(per_msg_price),
+                            use_api_cost: use_api_cost,
                         },
                     ],
                 }),
@@ -401,6 +412,9 @@ export default function ModelsPage() {
                                   ),
                                   per_msg_price: Number(
                                       data.results[0].data.per_msg_price
+                                  ),
+                                  use_api_cost: Boolean(
+                                      data.results[0].data.use_api_cost
                                   ),
                               }
                             : model
@@ -474,7 +488,13 @@ export default function ModelsPage() {
                 setModels((prev) =>
                     prev.map((model) => {
                         const syncedModel = data.syncedModels.find(
-                            (m: any) => m.id === model.id && m.success
+                            (m: {
+                                id: string
+                                success: boolean
+                                input_price: number
+                                output_price: number
+                                per_msg_price: number
+                            }) => m.id === model.id && m.success
                         )
                         if (syncedModel) {
                             return {
@@ -488,7 +508,11 @@ export default function ModelsPage() {
                     })
                 )
 
-                if (data.syncedModels.every((m: any) => m.success)) {
+                if (
+                    data.syncedModels.every(
+                        (m: { success: boolean }) => m.success
+                    )
+                ) {
                     toast.success(t('models.syncAllSuccess'))
                 } else {
                     toast.warning(t('models.syncAllFail'))
@@ -591,6 +615,26 @@ export default function ModelsPage() {
             render: (_, record) =>
                 renderPriceCell('per_msg_price', record, true),
         },
+        {
+            title: (
+                <span>
+                    {t('models.table.useApiCost')}{' '}
+                    <Tooltip title={t('models.table.useApiCostTooltip')}>
+                        <InfoCircleOutlined className="text-gray-400 cursor-help" />
+                    </Tooltip>
+                </span>
+            ),
+            key: 'use_api_cost',
+            width: 120,
+            render: (_, record) => (
+                <Switch
+                    checked={record.use_api_cost}
+                    onChange={(checked) =>
+                        handlePriceUpdate(record.id, 'use_api_cost', checked)
+                    }
+                />
+            ),
+        },
     ]
 
     const handleExportPrices = () => {
@@ -599,6 +643,7 @@ export default function ModelsPage() {
             input_price: model.input_price,
             output_price: model.output_price,
             per_msg_price: model.per_msg_price,
+            use_api_cost: model.use_api_cost,
         }))
 
         const blob = new Blob([JSON.stringify(priceData, null, 2)], {
@@ -647,8 +692,16 @@ export default function ModelsPage() {
                     setModels((prevModels) =>
                         prevModels.map((model) => {
                             const update = data.results.find(
-                                (r: any) =>
-                                    r.id === model.id && r.success && r.data
+                                (r: {
+                                    id: string
+                                    success: boolean
+                                    data: {
+                                        input_price: number
+                                        output_price: number
+                                        per_msg_price: number
+                                        use_api_cost?: boolean
+                                    }
+                                }) => r.id === model.id && r.success && r.data
                             )
                             if (update) {
                                 return {
@@ -662,6 +715,9 @@ export default function ModelsPage() {
                                     per_msg_price: Number(
                                         update.data.per_msg_price
                                     ),
+                                    use_api_cost: Boolean(
+                                        update.data.use_api_cost ?? false
+                                    ),
                                 }
                             }
                             return model
@@ -671,7 +727,9 @@ export default function ModelsPage() {
 
                 message.success(
                     `${t('error.model.updateSuccess')} ${
-                        data.results.filter((r: any) => r.success).length
+                        data.results.filter(
+                            (r: { success: boolean }) => r.success
+                        ).length
                     } ${t('error.model.numberOfModelPrice')}`
                 )
             } catch (err) {
@@ -847,32 +905,49 @@ export default function ModelsPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                <div className="grid grid-cols-4 gap-2 sm:gap-4">
                     {[
                         {
                             label: t('models.table.mobile.inputPrice'),
                             field: 'input_price' as const,
-                            disabled: isPerMsgEnabled,
+                            disabled: isPerMsgEnabled || record.use_api_cost,
                         },
                         {
                             label: t('models.table.mobile.outputPrice'),
                             field: 'output_price' as const,
-                            disabled: isPerMsgEnabled,
+                            disabled: isPerMsgEnabled || record.use_api_cost,
                         },
                         {
                             label: t('models.table.mobile.perMsgPrice'),
                             field: 'per_msg_price' as const,
-                            disabled: false,
+                            disabled: record.use_api_cost,
                         },
-                    ].map(({ label, field, disabled }) => (
+                        {
+                            label: t('models.table.mobile.useApiCost'),
+                            type: 'switch' as const,
+                        },
+                    ].map((item, index) => (
                         <div
-                            key={field}
-                            className={`space-y-1.5 ${disabled ? 'opacity-50' : ''}`}
+                            key={index}
+                            className={`space-y-1.5 ${item.type === 'switch' ? '' : item.disabled ? 'opacity-50' : ''}`}
                         >
                             <span className="text-xs text-muted-foreground/80 block truncate">
-                                {label}
+                                {item.label}
                             </span>
-                            {renderPriceCell(field, record, false)}
+                            {item.type === 'switch' ? (
+                                <Switch
+                                    checked={record.use_api_cost}
+                                    onChange={(checked) =>
+                                        handlePriceUpdate(
+                                            record.id,
+                                            'use_api_cost',
+                                            checked
+                                        )
+                                    }
+                                />
+                            ) : (
+                                renderPriceCell(item.field, record, false)
+                            )}
                         </div>
                     ))}
                 </div>
@@ -888,8 +963,20 @@ export default function ModelsPage() {
         const isEditing =
             editingCell?.id === record.id && editingCell?.field === field
         const currentValue = Number(record[field])
-        const isDisabled =
+        const isPerMsgOverride =
             field !== 'per_msg_price' && record.per_msg_price >= 0
+        const isApiCostOverride =
+            field !== 'per_msg_price' && record.use_api_cost
+        const isDisabled = isPerMsgOverride || isApiCostOverride
+
+        let tooltipText: string | undefined
+        if (showTooltip && isDisabled) {
+            if (isApiCostOverride) {
+                tooltipText = t('models.table.priceOverriddenByApiCost')
+            } else {
+                tooltipText = t('models.table.priceOverriddenByPerMsg')
+            }
+        }
 
         return (
             <EditableCell
@@ -905,11 +992,7 @@ export default function ModelsPage() {
                 t={t}
                 disabled={isDisabled}
                 onCancel={() => setEditingCell(null)}
-                tooltipText={
-                    showTooltip && isDisabled
-                        ? t('models.table.priceOverriddenByPerMsg')
-                        : undefined
-                }
+                tooltipText={tooltipText}
                 placeholder={t('models.table.enterPrice')}
                 validateValue={(value) => ({
                     isValid:
@@ -1097,7 +1180,7 @@ export default function ModelsPage() {
                             pagination={false}
                             size="middle"
                             className={tableClassName}
-                            scroll={{ x: 500 }}
+                            scroll={{ x: 800 }}
                             rowClassName={() => 'group'}
                         />
                     )}

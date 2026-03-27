@@ -18,13 +18,14 @@ interface ModelPrice {
     input_price: number
     output_price: number
     per_msg_price: number
+    use_api_cost: boolean
 }
 
 type DbClient = ReturnType<typeof createClient> | Pool | PoolClient
 
 async function getModelPrice(modelId: string): Promise<ModelPrice | null> {
     const result = await query(
-        `SELECT id, name, input_price, output_price, per_msg_price 
+        `SELECT id, name, input_price, output_price, per_msg_price, use_api_cost 
      FROM model_prices 
      WHERE id = $1`,
         [modelId]
@@ -56,6 +57,7 @@ async function getModelPrice(modelId: string): Promise<ModelPrice | null> {
         input_price: defaultInputPrice,
         output_price: defaultOutputPrice,
         per_msg_price: -1,
+        use_api_cost: false,
     }
 }
 
@@ -106,6 +108,11 @@ export async function POST(req: Request) {
         if (outputTokens === 0) {
             totalCost = 0
             console.log('No charge for zero output tokens')
+        } else if (modelPrice.use_api_cost && data.apiCost !== undefined) {
+            totalCost = Number(data.apiCost)
+            console.log(
+                `Using API-provided cost: ${totalCost} (use_api_cost enabled for model ${modelId})`
+            )
         } else if (modelPrice.per_msg_price >= 0) {
             totalCost = Number(modelPrice.per_msg_price)
             console.log(

@@ -7,6 +7,7 @@ interface PriceUpdate {
     input_price: number
     output_price: number
     per_msg_price: number
+    use_api_cost?: boolean
 }
 
 export async function POST(request: NextRequest) {
@@ -29,11 +30,12 @@ export async function POST(request: NextRequest) {
         }
 
         const validUpdates = updates
-            .map((update: any) => ({
-                id: update.id,
+            .map((update: Record<string, unknown>) => ({
+                id: update.id as string,
                 input_price: Number(update.input_price),
                 output_price: Number(update.output_price),
                 per_msg_price: Number(update.per_msg_price ?? -1),
+                use_api_cost: (update.use_api_cost ?? false) as boolean,
             }))
             .filter((update: PriceUpdate) => {
                 const isValidPrice = (price: number) =>
@@ -70,7 +72,8 @@ export async function POST(request: NextRequest) {
                         update.id,
                         update.input_price,
                         update.output_price,
-                        update.per_msg_price
+                        update.per_msg_price,
+                        update.use_api_cost ?? false
                     )
 
                     console.log('Update results:', {

@@ -251,11 +251,48 @@ class Filter:
                     normalized_count,
                 )
 
+            # Extract API-provided cost from the message if available
+            # The cost field is typically in the usage section of the last message
+            api_cost = None
+            try:
+                messages = body_for_outlet.get("messages", [])
+                if messages:
+                    last_message = messages[-1]
+                    # Check for cost in message.info.usage (OpenWebUI format)
+                    if last_message.get("info") and isinstance(last_message["info"], dict):
+                        info = last_message["info"]
+                        if info.get("usage") and isinstance(info["usage"], dict):
+                            usage = info["usage"]
+                            if "cost" in usage and usage["cost"] is not None:
+                                api_cost = float(usage["cost"])
+                                logger.info(
+                                    "usage_monitor(invisible): found API cost in message.info.usage: %f",
+                                    api_cost,
+                                )
+                        # Also check directly in info for cost
+                        if api_cost is None and "cost" in info and info["cost"] is not None:
+                            api_cost = float(info["cost"])
+                            logger.info(
+                                "usage_monitor(invisible): found API cost in message.info: %f",
+                                api_cost,
+                            )
+                    # Check for cost directly in message.usage (alternative format)
+                    if api_cost is None and last_message.get("usage") and isinstance(last_message["usage"], dict):
+                        usage = last_message["usage"]
+                        if "cost" in usage and usage["cost"] is not None:
+                            api_cost = float(usage["cost"])
+                            logger.info(
+                                "usage_monitor(invisible): found API cost in message.usage: %f",
+                                api_cost,
+                            )
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.warning("usage_monitor(invisible): failed to parse API cost: %s", e)
+
             result = await self._request(
                 client=client,
                 url=f"{self.valves.api_endpoint}/api/v1/outlet",
                 headers={"Authorization": f"Bearer {self.valves.api_key}"},
-                json_data={"user": __user__, "body": body_for_outlet},
+                json_data={"user": __user__, "body": body_for_outlet, "apiCost": api_cost},
             )
 
             # Extract accounting
