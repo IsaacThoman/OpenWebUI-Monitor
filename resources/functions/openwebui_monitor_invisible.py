@@ -1,245 +1,345 @@
-from typing import Optional, Callable, Any, Awaitable
-from pydantic import Field, BaseModel
-import requests
-import time
-from open_webui.utils.misc import get_last_assistant_message
-import json
-import os
+"""
+title: OpenWebUI Monitor (Invisible, v2)
+author: VariantConst & OVINC CN (ported to invisible+button pair)
+version: 0.4.2
+requirements: httpx, pydantic
+license: MIT
+"""
 
+import copy
+import time
+import os
+import json
+import logging
+from typing import Dict, Optional, Callable, Any, Awaitable
+from pydantic import BaseModel, Field
+from httpx import AsyncClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+TRANSLATIONS = {
+    "en": {
+        "request_failed": "Request failed: {error_msg}",
+        "insufficient_balance": "Insufficient balance: Current balance `{balance:.4f}`",
+        "api_auth_failed": "API key authentication failed",
+        "missing_message_id": "Unable to get message ID",
+        "written_stats": "Usage stats written for message {message_id}",
+    },
+    "zh": {
+        "request_failed": "请求失败: {error_msg}",
+        "insufficient_balance": "余额不足: 当前余额 `{balance:.4f}`",
+        "api_auth_failed": "API密钥验证失败",
+        "missing_message_id": "无法获取消息ID",
+        "written_stats": "已写入消息 {message_id} 的计费统计",
+    },
+}
+
+
+class CustomException(Exception):
+    pass
 
 
 class Filter:
     class Valves(BaseModel):
-        API_ENDPOINT: str = Field(
-            default="", description="The base URL for the API endpoint."
-        )
-        API_KEY: str = Field(default="", description="API key for authentication.")
-        priority: int = Field(
-            default=5, description="Priority level for the filter operations."
-        )
+        api_endpoint: str = Field(default="", description="openwebui-monitor base URL")
+        api_key: str = Field(default="", description="openwebui-monitor API key")
+        priority: int = Field(default=5, description="Filter priority")
+        language: str = Field(default="zh", description="language (en/zh)")
 
     def __init__(self):
         self.type = "filter"
-        self.name = "OpenWebUI Monitor"
+        self.name = "OpenWebUI Monitor (Invisible v2)"
         self.valves = self.Valves()
-        self.outage = False
-        self.start_time = None
-        self.inlet_temp = None
+        self.outage_map: Dict[str, bool] = {}
+        self.start_time: Optional[float] = None
+        # Keep a deep copy of inlet body to stitch if needed (rare)
+        self._inlet_snapshot: Optional[dict] = None
 
-    def _prepare_request_body(self, body: dict) -> dict:
-        """Convert body and nested objects to JSON-serializable format"""
-        body_copy = body.copy()
-        
-        if 'metadata' in body_copy and 'model' in body_copy['metadata']:
-            if hasattr(body_copy['metadata']['model'], 'model_dump'):
-                body_copy['metadata']['model'] = body_copy['metadata']['model'].model_dump()
-        
-        return body_copy
+    # ----------------------------
+    # Helpers
+    # ----------------------------
+    def _t(self, key: str, **kwargs) -> str:
+        lang = self.valves.language if self.valves.language in TRANSLATIONS else "en"
+        text = TRANSLATIONS[lang].get(key, TRANSLATIONS["en"][key])
+        return text.format(**kwargs) if kwargs else text
 
-    def _prepare_user_dict(self, __user__: dict) -> dict:
-        """将 __user__ 对象转换为可序列化的字典"""
-        user_dict = dict(__user__)  # 创建副本以避免修改原始对象
+    async def _request(
+        self, client: AsyncClient, url: str, headers: dict, json_data: dict
+    ):
+        # Robust JSON-ify (pydantic models etc.)
+        json_data = json.loads(
+            json.dumps(
+                json_data, default=lambda o: o.dict() if hasattr(o, "dict") else str(o)
+            )
+        )
+        resp = await client.post(url=url, headers=headers, json=json_data)
+        if resp.status_code == 401:
+            # Let caller decide how to surface auth failures
+            raise CustomException(self._t("api_auth_failed"))
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get("success"):
+            raise CustomException(self._t("request_failed", error_msg=data))
+        return data
 
-        # 如果存在 valves 且是 BaseModel 的实例，将其转换为字典
-        if "valves" in user_dict and hasattr(user_dict["valves"], "model_dump"):
-            user_dict["valves"] = user_dict["valves"].model_dump()
+    @staticmethod
+    def _find_last_assistant_id(messages: list) -> Optional[str]:
+        last_assistant = None
+        for m in messages:
+            if m.get("role") == "assistant":
+                last_assistant = m
+        return last_assistant.get("id") if last_assistant else None
 
-        return user_dict
+    @staticmethod
+    def _record_dir() -> str:
+        return "/app/backend/data/record"
 
-    def _modify_outlet_body(self, body: dict) -> dict:
-        body_modify = dict(body)
-        last_message = body_modify["messages"][-1]
-    
-        if "info" not in last_message and self.inlet_temp is not None:
-            body_modify["messages"][:-1] = self.inlet_temp["messages"]
-        return body_modify
-
-    def inlet(
-        self, body: dict, user: Optional[dict] = None, __user__: dict = {}
-    ) -> dict:
-        self.start_time = time.time()
-
+    @staticmethod
+    def _as_int(value: Any) -> Optional[int]:
+        if value is None or isinstance(value, bool):
+            return None
         try:
-            post_url = f"{self.valves.API_ENDPOINT}/api/v1/inlet"
-            headers = {"Authorization": f"Bearer {self.valves.API_KEY}"}
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
-            # 使用 _prepare_user_dict 处理 __user__ 对象
-            user_dict = self._prepare_user_dict(__user__)
-            body_dict = self._prepare_request_body(body)
-            self.inlet_temp = body_dict
-            request_data = {
-                "user": user_dict,
-                "body": body_dict
-            }
-            response = requests.post(post_url, headers=headers, json=request_data)
+    def _normalize_reasoning_billed_output_tokens(self, node: Any) -> int:
+        """
+        Normalize providers that report visible completion_tokens separately from
+        reasoning_tokens while billing output as:
+            total_tokens - prompt_tokens
 
-            if response.status_code == 401:
-                return body
+        Example fixed by this:
+        - prompt_tokens = 145
+        - completion_tokens = 333
+        - reasoning_tokens = 2163
+        - total_tokens = 2641
+        => billed output tokens should be 2496, not 333
+        """
+        fixed = 0
 
-            response.raise_for_status()
-            response_data = response.json()
+        if isinstance(node, dict):
+            prompt_tokens = self._as_int(node.get("prompt_tokens"))
+            completion_tokens = self._as_int(node.get("completion_tokens"))
+            total_tokens = self._as_int(node.get("total_tokens"))
 
-            if not response_data.get("success"):
-                error_msg = response_data.get("error", "未知错误")
-                error_type = response_data.get("error_type", "UNKNOWN_ERROR")
-                raise Exception(f"请求失败: [{error_type}] {error_msg}")
+            completion_details = node.get("completion_tokens_details")
+            reasoning_tokens = None
+            if isinstance(completion_details, dict):
+                reasoning_tokens = self._as_int(
+                    completion_details.get("reasoning_tokens")
+                )
 
-            self.outage = response_data.get("balance", 0) <= 0
-            if self.outage:
-                raise Exception(f"余额不足: 当前余额 `{response_data['balance']:.4f}`")
-
-            return body
-
-        except requests.exceptions.RequestException as e:
             if (
-                isinstance(e, requests.exceptions.HTTPError)
-                and e.response.status_code == 401
+                prompt_tokens is not None
+                and completion_tokens is not None
+                and total_tokens is not None
+                and reasoning_tokens is not None
+                and reasoning_tokens > 0
             ):
-                return body
-            raise Exception(f"网络请求失败: {str(e)}")
-        except Exception as e:
-            raise Exception(f"处理请求时发生错误: {str(e)}")
+                billed_output_tokens = total_tokens - prompt_tokens
+                # Only rewrite when reasoning is clearly excluded from completion_tokens
+                # and the billed output is exactly completion + reasoning.
+                if (
+                    billed_output_tokens > 0
+                    and billed_output_tokens != completion_tokens
+                    and billed_output_tokens == completion_tokens + reasoning_tokens
+                ):
+                    node["completion_tokens"] = billed_output_tokens
+                    node["output_tokens"] = billed_output_tokens
+                    fixed += 1
+
+            for value in node.values():
+                fixed += self._normalize_reasoning_billed_output_tokens(value)
+
+        elif isinstance(node, list):
+            for item in node:
+                fixed += self._normalize_reasoning_billed_output_tokens(item)
+
+        return fixed
+
+    # ----------------------------
+    # Filter lifecycle
+    # ----------------------------
+    async def inlet(
+        self, body: dict, __user__: Optional[dict] = None, **kwargs
+    ) -> dict:
+        """
+        Start-of-request hook:
+        - Calls /api/v1/inlet
+        - Checks balance (per-user outage gate)
+        - Starts timer
+        - Snapshots inlet body (optional)
+        """
+        self.start_time = time.time()
+        self._inlet_snapshot = copy.deepcopy(body)
+        __user__ = __user__ or {}
+        user_id = __user__.get("id", "default")
+        client = AsyncClient()
+        try:
+            data = await self._request(
+                client=client,
+                url=f"{self.valves.api_endpoint}/api/v1/inlet",
+                headers={"Authorization": f"Bearer {self.valves.api_key}"},
+                json_data={"user": __user__, "body": body},
+            )
+            # Gate by balance
+            self.outage_map[user_id] = data.get("balance", 0) <= 0
+            if self.outage_map[user_id]:
+                raise CustomException(
+                    self._t("insufficient_balance", balance=data.get("balance", 0))
+                )
+            return body
+        except CustomException as ce:
+            logger.exception(ce)
+            # Propagate to stop generation when outage/401/etc.
+            raise
+        except Exception as err:
+            logger.exception(self._t("request_failed", error_msg=err))
+            # Wrap as generic error (visible in UI)
+            raise Exception(f"error calculating usage, {err}") from err
+        finally:
+            await client.aclose()
 
     async def outlet(
         self,
         body: dict,
-        user: Optional[dict] = None,
-        __user__: dict = {},
-        __event_emitter__: Callable[[Any], Awaitable[None]] = None,
+        __user__: Optional[dict] = None,
+        __event_emitter__: Optional[Callable[[Any], Awaitable[None]]] = None,
+        **kwargs,
     ) -> dict:
-        if self.outage:
+        """
+        End-of-response hook:
+        - Calls /api/v1/outlet
+        - Persists usage stats to /app/backend/data/record/{message_id}.json
+        - (Optionally) emits a brief status line (not required for the button to work)
+        """
+        __user__ = __user__ or {}
+        user_id = __user__.get("id", "default")
+
+        # If inlet determined outage, skip accounting
+        if self.outage_map.get(user_id, False):
             return body
 
+        client = AsyncClient()
         try:
-            post_url = f"{self.valves.API_ENDPOINT}/api/v1/outlet"
-            headers = {"Authorization": f"Bearer {self.valves.API_KEY}"}
+            # Build request with stitched inlet snapshot if OWUI trimmed messages
+            body_for_outlet = copy.deepcopy(body)
+            if (
+                body.get("messages")
+                and self._inlet_snapshot
+                and self._inlet_snapshot.get("messages")
+            ):
+                # If the last message lacks 'info' and counts changed, stitch prior msgs
+                try:
+                    if "info" not in body["messages"][-1]:
+                        body_for_outlet["messages"][:-1] = self._inlet_snapshot[
+                            "messages"
+                        ]
+                except Exception:
+                    pass
 
-            # 使用 _prepare_user_dict 处理 __user__ 对象
-            user_dict = self._prepare_user_dict(__user__)
-            body_dict = self._prepare_request_body(body)
-            body_modify = self._modify_outlet_body(body_dict)
-            request_data = {
-                "user": user_dict,
-                "body": body_modify
-            }
-            response = requests.post(post_url, headers=headers, json=request_data)
+            # Normalize providers like Grok/xAI that expose reasoning tokens separately
+            # while billing them as output tokens.
+            normalized_count = self._normalize_reasoning_billed_output_tokens(
+                body_for_outlet
+            )
+            if normalized_count:
+                logger.info(
+                    "usage_monitor(invisible): normalized %d reasoning-billed usage payload(s)",
+                    normalized_count,
+                )
 
+            result = await self._request(
+                client=client,
+                url=f"{self.valves.api_endpoint}/api/v1/outlet",
+                headers={"Authorization": f"Bearer {self.valves.api_key}"},
+                json_data={"user": __user__, "body": body_for_outlet},
+            )
 
-            if response.status_code == 401:
-                if __event_emitter__:
-                    await __event_emitter__(
-                        {
-                            "type": "status",
-                            "data": {
-                                "description": "API密钥验证失败",
-                                "done": True,
-                            },
-                        }
-                    )
-                return body
-
-            response.raise_for_status()
-            result = response.json()
-
-            if not result.get("success"):
-                error_msg = result.get("error", "未知错误")
-                error_type = result.get("error_type", "UNKNOWN_ERROR")
-                raise Exception(f"请求失败: [{error_type}] {error_msg}")
-
-            # 获取统计数据
+            # Extract accounting
             input_tokens = result["inputTokens"]
             output_tokens = result["outputTokens"]
             total_cost = result["totalCost"]
             new_balance = result["newBalance"]
 
-            print(f"user_dict: {json.dumps(user_dict, indent=4)}")
-            print(f"inlet body: {json.dumps(body, indent=4)}")
-
-            # 从 body 中获取消息 ID
+            # Identify message id to key the record
             messages = body.get("messages", [])
-            message_id = messages[-1].get("id") if messages else None
-
-            if message_id:  # 需要 message_id
-                # 构建统计信息字典
-                stats_data = {
-                    "input_tokens": input_tokens,
-                    "output_tokens": output_tokens,
-                    "total_cost": total_cost,
-                    "new_balance": new_balance,
-                }
-
-                # 计算耗时（如果有start_time）
-                if self.start_time:
-                    elapsed_time = time.time() - self.start_time
-                    stats_data["elapsed_time"] = elapsed_time
-
-                    # 计算每秒输出速度，使用三元运算符避免除以零
-                    stats_data["tokens_per_sec"] = (
-                        output_tokens / elapsed_time if elapsed_time > 0 else 0
-                    )
-
-                    # 指定目标目录路径
-                    directory_path = "/app/backend/data/record"
-
-                    # 确保目录存在
-                    os.makedirs(directory_path, exist_ok=True)
-
-                # 构建文件路径
-                file_path = os.path.join(directory_path, f"{message_id}.json")
-
-                # 将统计信息写入 JSON 文件
-                with open(file_path, "w") as f:
-                    json.dump(stats_data, f, indent=4)
-            else:
+            message_id = self._find_last_assistant_id(messages) or (
+                messages[-1].get("id") if messages else None
+            )
+            if not message_id:
                 if __event_emitter__:
                     await __event_emitter__(
                         {
                             "type": "status",
                             "data": {
-                                "description": f"无法获取消息ID",
-                                "done": True,
-                            },
-                        }
-                    )
-
-            return body
-
-        except requests.exceptions.RequestException as e:
-            if (
-                isinstance(e, requests.exceptions.HTTPError)
-                and e.response.status_code == 401
-            ):
-                if __event_emitter__:
-                    await __event_emitter__(
-                        {
-                            "type": "status",
-                            "data": {
-                                "description": "API密钥验证失败",
+                                "description": self._t("missing_message_id"),
                                 "done": True,
                             },
                         }
                     )
                 return body
+
+            # Build stats record
+            stats = {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_cost": total_cost,
+                "new_balance": new_balance,
+            }
+            if self.start_time:
+                elapsed = time.time() - self.start_time
+                stats["elapsed_time"] = elapsed
+                stats["tokens_per_sec"] = (
+                    (output_tokens / elapsed) if elapsed > 0 else 0.0
+                )
+
+            # Persist to /app/backend/data/record/{message_id}.json
+            rec_dir = self._record_dir()
+            os.makedirs(rec_dir, exist_ok=True)
+            file_path = os.path.join(rec_dir, f"{message_id}.json")
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=4)
+
+            # if __event_emitter__:
+            #     await __event_emitter__(
+            #         {
+            #             "type": "status",
+            #             "data": {
+            #                 "description": self._t(
+            #                     "written_stats", message_id=message_id
+            #                 ),
+            #                 "done": True,
+            #             },
+            #         }
+            #     )
+            logger.info("usage_monitor(invisible): wrote %s", file_path)
+            return body
+
+        except CustomException as ce:
+            # Surface auth failures as a status line instead of raising (to avoid breaking UI)
+            if __event_emitter__:
+                await __event_emitter__(
+                    {"type": "status", "data": {"description": str(ce), "done": True}}
+                )
+            return body
+        except Exception as err:
+            # Also surface generic failures as a status line; button will still work for prior messages
             if __event_emitter__:
                 await __event_emitter__(
                     {
                         "type": "status",
                         "data": {
-                            "description": f"网络请求失败: {str(e)}",
+                            "description": self._t(
+                                "request_failed", error_msg=str(err)
+                            ),
                             "done": True,
                         },
                     }
                 )
-            raise Exception(f"网络请求失败: {str(e)}")
-        except Exception as e:
-            if __event_emitter__:
-                await __event_emitter__(
-                    {
-                        "type": "status",
-                        "data": {
-                            "description": f"错误: {str(e)}",
-                            "done": True,
-                        },
-                    }
-                )
-            raise Exception(f"处理请求时发生错误: {str(e)}")
+            logger.exception(err)
+            return body
+        finally:
+            await client.aclose()
