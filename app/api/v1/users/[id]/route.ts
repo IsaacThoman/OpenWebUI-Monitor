@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteUser } from '@/lib/db/users'
 import { query } from '@/lib/db/client'
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function DELETE(
     req: NextRequest,
     { params }: { params: { id: string } }
 ) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }
@@ -28,7 +28,7 @@ export async function PATCH(
     req: NextRequest,
     { params }: { params: { id: string } }
 ) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ensureTablesExist, getOrCreateModelPrices } from '@/lib/db/client'
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 interface ModelInfo {
     id: string
@@ -23,7 +23,7 @@ interface ModelResponse {
 }
 
 export async function GET(req: Request) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }
@@ -156,7 +156,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }
@@ -169,7 +169,7 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }

@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/db/client'
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function GET(request: Request) {
-    const authError = verifyApiToken(request)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }

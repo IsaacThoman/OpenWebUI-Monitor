@@ -23,35 +23,28 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (pathname === '/token' || pathname.startsWith('/account')) {
+            // Allow login page and auto-login link pages through without auth
+            if (
+                pathname.startsWith('/account/login') ||
+                pathname.startsWith('/u/')
+            ) {
                 setIsLoading(false)
                 setIsAuthorized(true)
                 return
             }
 
-            const token = localStorage.getItem('access_token')
-            if (!token) {
-                router.push('/token')
-                return
-            }
-
+            // All other pages require user portal session (cookie-based)
             try {
-                const res = await fetch('/api/v1/config', {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                })
+                const res = await fetch('/api/v1/user-portal/me')
 
                 if (!res.ok) {
-                    localStorage.removeItem('access_token')
-                    router.push('/token')
+                    router.push('/account/login')
                     return
                 }
 
                 setIsAuthorized(true)
             } catch (error) {
-                localStorage.removeItem('access_token')
-                router.push('/token')
+                router.push('/account/login')
             } finally {
                 setIsLoading(false)
             }

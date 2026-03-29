@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateModelPrice } from '@/lib/db/client'
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 interface PriceUpdate {
     id: string
@@ -11,7 +11,7 @@ interface PriceUpdate {
 }
 
 export async function POST(request: NextRequest) {
-    const authError = verifyApiToken(request)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }

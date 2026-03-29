@@ -16,15 +16,13 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface DatabaseBackupProps {
-    open: boolean
+    isOpen: boolean
     onClose: () => void
-    token?: string
 }
 
 export default function DatabaseBackup({
-    open,
+    isOpen,
     onClose,
-    token,
 }: DatabaseBackupProps) {
     const { t } = useTranslation('common')
     const fileInputRef = useRef<HTMLInputElement>(null)
@@ -32,18 +30,9 @@ export default function DatabaseBackup({
     const [isImporting, setIsImporting] = useState(false)
 
     const handleExport = async () => {
-        if (!token) {
-            toast.error(t('auth.unauthorized'))
-            return
-        }
-
         setIsExporting(true)
         try {
-            const response = await fetch('/api/v1/panel/database/export', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
+            const response = await fetch('/api/v1/panel/database/export')
 
             if (!response.ok) {
                 throw new Error(t('backup.export.error'))
@@ -73,11 +62,6 @@ export default function DatabaseBackup({
         const file = event.target.files?.[0]
         if (!file) return
 
-        if (!token) {
-            toast.error(t('auth.unauthorized'))
-            return
-        }
-
         setIsImporting(true)
         try {
             const content = await file.text()
@@ -87,7 +71,6 @@ export default function DatabaseBackup({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(data),
             })
@@ -125,8 +108,8 @@ export default function DatabaseBackup({
                 expand
                 duration={1500}
             />
-            {open && (
-                <Dialog open={open} onOpenChange={onClose}>
+            {isOpen && (
+                <Dialog open={isOpen} onOpenChange={onClose}>
                     <DialogContent className="w-[calc(100%-2rem)] !max-w-[400px] rounded-lg backdrop-blur-lg bg-white/90 border border-white/20 shadow-xl md:px-6">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}

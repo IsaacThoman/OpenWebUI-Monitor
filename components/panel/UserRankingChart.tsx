@@ -58,7 +58,7 @@ const getBarOption = (
             ),
             axisLabel: {
                 inside: false,
-                color: '#555',
+                color: 'rgba(148, 163, 184, 0.8)',
                 fontSize: 12,
                 rotate: 35,
                 interval: 0,
@@ -74,8 +74,8 @@ const getBarOption = (
             axisLine: {
                 show: true,
                 lineStyle: {
-                    color: '#eee',
-                    width: 2,
+                    color: 'rgba(51, 65, 85, 0.6)',
+                    width: 1,
                 },
             },
             z: 10,
@@ -84,38 +84,38 @@ const getBarOption = (
             type: 'value',
             name: '',
             nameTextStyle: {
-                color: '#666',
+                color: 'rgba(148, 163, 184, 0.6)',
                 fontSize: 13,
                 padding: [0, 0, 0, 0],
             },
             axisLine: {
                 show: true,
                 lineStyle: {
-                    color: '#eee',
-                    width: 2,
+                    color: 'rgba(51, 65, 85, 0.6)',
+                    width: 1,
                 },
             },
             axisTick: {
                 show: true,
                 lineStyle: {
-                    color: '#eee',
+                    color: 'rgba(51, 65, 85, 0.6)',
                 },
             },
             splitLine: {
                 show: true,
                 lineStyle: {
-                    color: '#f5f5f5',
-                    width: 2,
+                    color: 'rgba(51, 65, 85, 0.3)',
+                    width: 1,
                 },
             },
             axisLabel: {
-                color: '#666',
+                color: 'rgba(148, 163, 184, 0.7)',
                 fontSize: 12,
                 formatter: (value: number) => {
                     if (metric === 'cost') {
-                        return `¥${value.toFixed(1)}`
+                        return `${t('common.currency')}${value.toFixed(1)}`
                     }
-                    return `${value}次`
+                    return `${value}`
                 },
             },
         },
@@ -181,7 +181,7 @@ const getBarOption = (
                 data: columnData.map((item) => item.value),
                 showBackground: true,
                 backgroundStyle: {
-                    color: 'rgba(180, 180, 180, 0.08)',
+                    color: 'rgba(99, 133, 255, 0.05)',
                     borderRadius: [8, 8, 0, 0],
                 },
                 label: {
@@ -193,7 +193,7 @@ const getBarOption = (
                             : `${params.value}`
                     },
                     fontSize: 11,
-                    color: '#666',
+                    color: 'rgba(148, 163, 184, 0.8)',
                     distance: 2,
                     fontFamily: 'monospace',
                 },

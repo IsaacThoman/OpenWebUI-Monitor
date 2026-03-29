@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 import { issueUserViewerToken } from '@/lib/db/users'
 import { getPublicAppUrl } from '@/lib/public-url'
 
@@ -8,7 +8,7 @@ export async function POST(
     req: NextRequest,
     { params }: { params: { id: string } }
 ) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }

@@ -283,3 +283,275 @@ body {
 .custom-date-picker .ant-picker-ranges {
     border-top: 1px solid hsl(var(--border));
 }
+
+/* ─── Admin Dark Theme Overrides ──────────────────────────────────────────── */
+/* Applied when admin panels render inside the unified account page */
+
+.admin-dark-theme {
+    --background: 222 47% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 222 47% 4%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 215 28% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 160 84% 39%;
+
+    color: hsl(var(--foreground));
+}
+
+/* Ant Design Table */
+.admin-dark-theme .ant-table {
+    background: transparent !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+.admin-dark-theme .ant-table-container {
+    border-color: hsl(215 28% 17%) !important;
+}
+
+.admin-dark-theme .ant-table-thead > tr > th,
+.admin-dark-theme .ant-table-thead > tr > td {
+    background: hsl(222 47% 9%) !important;
+    color: hsl(215 20% 55%) !important;
+    border-bottom-color: hsl(215 28% 17%) !important;
+    font-weight: 500;
+}
+
+.admin-dark-theme .ant-table-tbody > tr > td {
+    background: transparent !important;
+    color: hsl(210 40% 88%) !important;
+    border-bottom-color: hsl(215 28% 14%) !important;
+}
+
+.admin-dark-theme .ant-table-tbody > tr:hover > td {
+    background: hsl(215 28% 12%) !important;
+}
+
+.admin-dark-theme .ant-table-tbody > tr.ant-table-row:hover > td {
+    background: hsl(215 28% 12%) !important;
+}
+
+.admin-dark-theme .ant-table-cell-row-hover {
+    background: hsl(215 28% 12%) !important;
+}
+
+/* Table pagination */
+.admin-dark-theme .ant-pagination {
+    color: hsl(215 20% 55%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item {
+    background: transparent !important;
+    border-color: hsl(215 28% 17%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item a {
+    color: hsl(215 20% 55%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item-active {
+    background: hsl(160 84% 39% / 0.15) !important;
+    border-color: hsl(160 84% 39%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item-active a {
+    color: hsl(160 84% 45%) !important;
+}
+
+.admin-dark-theme .ant-pagination-prev button,
+.admin-dark-theme .ant-pagination-next button {
+    color: hsl(215 20% 55%) !important;
+}
+
+.admin-dark-theme .ant-pagination-disabled button {
+    color: hsl(215 28% 25%) !important;
+}
+
+.admin-dark-theme .ant-pagination-total-text {
+    color: hsl(215 20% 55%) !important;
+}
+
+/* Table empty state */
+.admin-dark-theme .ant-empty-description {
+    color: hsl(215 20% 45%) !important;
+}
+
+/* Table sort icons */
+.admin-dark-theme .ant-table-column-sorter {
+    color: hsl(215 20% 40%) !important;
+}
+
+.admin-dark-theme .ant-table-column-sorter-up.active,
+.admin-dark-theme .ant-table-column-sorter-down.active {
+    color: hsl(160 84% 45%) !important;
+}
+
+/* Table filter */
+.admin-dark-theme .ant-table-filter-trigger {
+    color: hsl(215 20% 45%) !important;
+}
+
+.admin-dark-theme .ant-table-filter-trigger:hover {
+    color: hsl(210 40% 80%) !important;
+}
+
+.admin-dark-theme .ant-table-filter-trigger.active {
+    color: hsl(160 84% 45%) !important;
+}
+
+/* Dropdown / popover filter menus — these are portaled to body */
+.ant-table-filter-dropdown {
+    background: hsl(222 47% 9%) !important;
+    border: 1px solid hsl(215 28% 17%) !important;
+    border-radius: 0.5rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Input */
+.admin-dark-theme .ant-input,
+.admin-dark-theme .ant-input-affix-wrapper {
+    background: hsl(222 47% 7%) !important;
+    border-color: hsl(215 28% 17%) !important;
+    color: hsl(210 40% 88%) !important;
+}
+
+.admin-dark-theme .ant-input::placeholder {
+    color: hsl(215 20% 40%) !important;
+}
+
+.admin-dark-theme .ant-input:focus,
+.admin-dark-theme .ant-input-affix-wrapper:focus,
+.admin-dark-theme .ant-input-affix-wrapper-focused {
+    border-color: hsl(160 84% 39%) !important;
+    box-shadow: 0 0 0 2px hsl(160 84% 39% / 0.1) !important;
+}
+
+/* Switch */
+.admin-dark-theme .ant-switch {
+    background: hsl(215 28% 25%) !important;
+}
+
+.admin-dark-theme .ant-switch-checked {
+    background: hsl(160 84% 39%) !important;
+}
+
+/* Progress */
+.admin-dark-theme .ant-progress-text {
+    color: hsl(215 20% 55%) !important;
+}
+
+/* DatePicker */
+.admin-dark-theme .ant-picker {
+    background: hsl(222 47% 7%) !important;
+    border-color: hsl(215 28% 17%) !important;
+    color: hsl(210 40% 88%) !important;
+}
+
+.admin-dark-theme .ant-picker input {
+    color: hsl(210 40% 88%) !important;
+}
+
+.admin-dark-theme .ant-picker:hover {
+    border-color: hsl(160 84% 39%) !important;
+}
+
+.admin-dark-theme .ant-picker-separator,
+.admin-dark-theme .ant-picker-suffix {
+    color: hsl(215 20% 40%) !important;
+}
+
+/* Tooltip */
+.admin-dark-theme .ant-tooltip-inner {
+    background: hsl(222 47% 12%) !important;
+    color: hsl(210 40% 88%) !important;
+}
+
+/* Spin (loading) */
+.admin-dark-theme .ant-spin-dot-item {
+    background-color: hsl(160 84% 45%) !important;
+}
+
+/* Table loading overlay */
+.admin-dark-theme .ant-spin-container::after {
+    background: hsl(222 47% 4% / 0.4) !important;
+}
+
+/* Message */
+.admin-dark-theme .ant-message-notice-content {
+    background: hsl(222 47% 12%) !important;
+    color: hsl(210 40% 88%) !important;
+}
+
+/* Card overrides for shadcn cards inside dark wrapper */
+.admin-dark-theme [class*="bg-card"] {
+    background-color: hsl(var(--card)) !important;
+}
+
+.admin-dark-theme [class*="border-border"] {
+    border-color: hsl(var(--border)) !important;
+}
+
+.admin-dark-theme [class*="text-foreground"],
+.admin-dark-theme h1,
+.admin-dark-theme h2,
+.admin-dark-theme h3 {
+    color: hsl(var(--foreground)) !important;
+}
+
+.admin-dark-theme [class*="text-muted-foreground"] {
+    color: hsl(var(--muted-foreground)) !important;
+}
+
+.admin-dark-theme [class*="text-primary"] {
+    color: hsl(160 84% 45%) !important;
+}
+
+.admin-dark-theme [class*="bg-primary\\/10"] {
+    background-color: hsl(160 84% 39% / 0.1) !important;
+}
+
+/* Button overrides for dark bg */
+.admin-dark-theme .bg-white,
+.admin-dark-theme [class*="bg-white"] {
+    background-color: hsl(222 47% 12%) !important;
+}
+
+.admin-dark-theme [class*="hover\\:bg-gray-50"]:hover {
+    background-color: hsl(222 47% 15%) !important;
+}
+
+.admin-dark-theme [class*="text-zinc-800"] {
+    color: hsl(210 40% 88%) !important;
+}
+
+.admin-dark-theme [class*="border-zinc-200"] {
+    border-color: hsl(215 28% 20%) !important;
+}
+
+/* Fix for chart cards */
+.admin-dark-theme [class*="bg-gradient-to-br"],
+.admin-dark-theme [class*="bg-card"] {
+    color: hsl(var(--foreground));
+}
+
+/* recharts */
+.admin-dark-theme .recharts-cartesian-axis-tick-value {
+    fill: hsl(215 20% 50%) !important;
+}
+
+.admin-dark-theme .recharts-legend-item-text {
+    color: hsl(215 20% 60%) !important;
+}
+

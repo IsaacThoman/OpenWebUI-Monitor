@@ -74,12 +74,12 @@ const getPieOption = (
         tooltip: {
             show: true,
             trigger: 'item',
-            backgroundColor: 'rgba(255, 255, 255, 0.98)',
-            borderColor: 'rgba(0, 0, 0, 0.05)',
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            borderColor: 'rgba(51, 65, 85, 0.5)',
             borderWidth: 1,
             padding: [14, 18],
             textStyle: {
-                color: '#333',
+                color: '#e2e8f0',
                 fontSize: 13,
                 lineHeight: 20,
             },
@@ -87,15 +87,15 @@ const getPieOption = (
                 const percentage = ((params.value / total) * 100).toFixed(1)
                 return `
           <div class="flex flex-col gap-1.5">
-            <div class="font-medium text-gray-800">${params.name}</div>
+            <div class="font-medium" style="color: #f1f5f9">${params.name}</div>
             <div class="flex items-center gap-2">
               <span class="inline-block w-2 h-2 rounded-full" style="background-color: ${
                   params.color
               }"></span>
-              <span class="text-sm">
+              <span class="text-sm" style="color: #94a3b8">
                 ${metric === 'cost' ? t('panel.byAmount') : t('panel.byCount')}
               </span>
-              <span class="font-mono text-sm font-medium text-gray-900">
+              <span class="font-mono text-sm font-medium" style="color: #e2e8f0">
                 ${
                     metric === 'cost'
                         ? `${t('common.currency')}${params.value.toFixed(4)}`
@@ -103,14 +103,14 @@ const getPieOption = (
                 }
               </span>
             </div>
-            <div class="text-xs text-gray-500">
-              占 <span class="font-medium text-gray-700">${percentage}%</span>
+            <div class="text-xs" style="color: #64748b">
+              <span class="font-medium" style="color: #94a3b8">${percentage}%</span>
             </div>
           </div>
         `
             },
             extraCssText:
-                'box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); border-radius: 8px;',
+                'box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); border-radius: 8px;',
         },
         legend: {
             show: true,
@@ -122,12 +122,12 @@ const getPieOption = (
             itemGap: 20,
             textStyle: {
                 fontSize: 13,
-                color: '#555',
+                color: 'rgba(148, 163, 184, 0.8)',
                 padding: [0, 0, 0, 4],
             },
             pageIconSize: 12,
             pageTextStyle: {
-                color: '#666',
+                color: 'rgba(148, 163, 184, 0.6)',
             },
         },
         series: [
@@ -143,9 +143,9 @@ const getPieOption = (
                 itemStyle: {
                     borderRadius: 6,
                     borderWidth: 2,
-                    borderColor: '#fff',
+                    borderColor: 'rgba(15, 23, 42, 0.8)',
                     shadowBlur: 8,
-                    shadowColor: 'rgba(0, 0, 0, 0.1)',
+                    shadowColor: 'rgba(0, 0, 0, 0.3)',
                 },
                 label: {
                     show: !isSmallScreen,
@@ -170,7 +170,7 @@ const getPieOption = (
                     rich: {
                         name: {
                             fontSize: 13,
-                            color: '#444',
+                            color: 'rgba(226, 232, 240, 0.9)',
                             padding: [0, 0, 3, 0],
                             fontWeight: 500,
                             width: 120,
@@ -178,13 +178,13 @@ const getPieOption = (
                         },
                         value: {
                             fontSize: 12,
-                            color: '#666',
+                            color: 'rgba(148, 163, 184, 0.8)',
                             padding: [3, 0],
                             fontFamily: 'monospace',
                         },
                         per: {
                             fontSize: 12,
-                            color: '#888',
+                            color: 'rgba(100, 116, 139, 0.8)',
                             padding: [2, 0, 0, 0],
                         },
                     },
@@ -245,7 +245,7 @@ const getPieOption = (
                     fontSize: 15,
                     fontWeight: '500',
                     lineHeight: 22,
-                    fill: '#333',
+                    fill: 'rgba(148, 163, 184, 0.7)',
                 },
                 zlevel: 2,
             },

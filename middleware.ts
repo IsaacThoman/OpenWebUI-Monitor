@@ -2,34 +2,22 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 const API_KEY = process.env.API_KEY
-const ACCESS_TOKEN = process.env.ACCESS_TOKEN
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
+    // Inlet/outlet endpoints use API_KEY (for OpenWebUI function calls)
     if (
         pathname.startsWith('/api/v1/inlet') ||
-        pathname.startsWith('/api/v1/outlet') ||
-        pathname.startsWith('/api/v1/models') ||
-        pathname.startsWith('/api/v1/panel') ||
-        pathname.startsWith('/api/v1/config') ||
-        pathname.startsWith('/api/v1/users')
+        pathname.startsWith('/api/v1/outlet')
     ) {
         console.log(
-            `[Middleware] ${request.method} ${pathname} - Checking auth`
+            `[Middleware] ${request.method} ${pathname} - Checking API_KEY auth`
         )
 
-        const token =
-            pathname.startsWith('/api/v1/panel') ||
-            pathname.startsWith('/api/v1/config') ||
-            pathname.startsWith('/api/v1/users') ||
-            pathname.startsWith('/api/v1/models')
-                ? ACCESS_TOKEN
-                : API_KEY
-
-        if (!token) {
+        if (!API_KEY) {
             console.error(
-                `[Middleware] ${pathname} - Server configuration error: required token is not set`
+                `[Middleware] ${pathname} - Server configuration error: API_KEY is not set`
             )
             return NextResponse.json(
                 { error: 'Server configuration error' },
@@ -38,10 +26,6 @@ export async function middleware(request: NextRequest) {
         }
 
         const authHeader = request.headers.get('authorization')
-        console.log(
-            `[Middleware] ${pathname} - Authorization header present: ${!!authHeader}`
-        )
-
         const providedKey = authHeader?.replace('Bearer ', '')
 
         if (!providedKey) {
@@ -49,25 +33,38 @@ export async function middleware(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        if (providedKey !== token) {
-            console.log(
-                `[Middleware] ${pathname} - Invalid token (provided: ${providedKey.substring(0, 4)}...${providedKey.slice(-4)}, expected: ${token.substring(0, 4)}...${token.slice(-4)})`
-            )
+        if (providedKey !== API_KEY) {
+            console.log(`[Middleware] ${pathname} - Invalid API key`)
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         console.log(`[Middleware] ${pathname} - Authentication successful`)
         return NextResponse.next()
-    } else if (!pathname.startsWith('/api/')) {
-        if (!ACCESS_TOKEN) {
-            console.error('ACCESS_TOKEN is not set')
-            return NextResponse.json(
-                { error: 'Server configuration error' },
-                { status: 500 }
-            )
-        }
+    }
 
-        if (pathname === '/token') {
+    // Admin API endpoints — auth is handled in route handlers via cookie session
+    if (
+        pathname.startsWith('/api/v1/models') ||
+        pathname.startsWith('/api/v1/panel') ||
+        pathname.startsWith('/api/v1/config') ||
+        pathname.startsWith('/api/v1/users')
+    ) {
+        return NextResponse.next()
+    }
+
+    // User portal API endpoints — auth handled in route handlers
+    if (pathname.startsWith('/api/v1/user-portal')) {
+        return NextResponse.next()
+    }
+
+    // Non-API pages
+    if (!pathname.startsWith('/api/')) {
+        // Allow login page and account pages through
+        if (
+            pathname === '/token' ||
+            pathname.startsWith('/account') ||
+            pathname.startsWith('/u/')
+        ) {
             return NextResponse.next()
         }
 
@@ -80,12 +77,9 @@ export async function middleware(request: NextRequest) {
         response.headers.set('Expires', '0')
 
         return response
-    } else if (pathname.startsWith('/api/config/key')) {
-        return NextResponse.next()
-    } else if (pathname.startsWith('/api/init')) {
-        return NextResponse.next()
     }
 
+    // Other API routes (config/key, init, etc.)
     return NextResponse.next()
 }
 

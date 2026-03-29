@@ -1,12 +1,12 @@
 import { query } from '@/lib/db/client'
 import { NextResponse } from 'next/server'
-import { verifyApiToken } from '@/lib/auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
 export async function PUT(
     req: Request,
     { params }: { params: { id: string } }
 ) {
-    const authError = verifyApiToken(req)
+    const { error: authError } = await requireAdmin()
     if (authError) {
         return authError
     }
