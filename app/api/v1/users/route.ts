@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 
         const result = await query(
             `SELECT id, email, name, role, balance, deleted, created_at,
-                viewer_token_hash IS NOT NULL AS has_viewer_token
+                COALESCE(viewer_token IS NOT NULL, viewer_token_hash IS NOT NULL) AS has_viewer_token
         FROM users 
         ${whereClause} 
         ${

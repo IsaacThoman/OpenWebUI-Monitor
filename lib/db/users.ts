@@ -10,6 +10,7 @@ export interface User {
     balance: number
     deleted?: boolean
     has_viewer_token?: boolean
+    viewer_token?: string | null
 }
 
 interface CreateUserInput {
@@ -67,6 +68,20 @@ function generateViewerToken(): string {
 }
 
 async function ensureViewerTokenColumnsExist() {
+    const viewerTokenPlainColumnExists = await query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'viewer_token'
+    );
+  `)
+
+    if (!viewerTokenPlainColumnExists.rows[0].exists) {
+        await query(`
+      ALTER TABLE users
+        ADD COLUMN viewer_token TEXT;
+    `)
+    }
+
     const viewerTokenColumnExists = await query(`
     SELECT EXISTS (
       SELECT FROM information_schema.columns
@@ -94,6 +109,12 @@ async function ensureViewerTokenColumnsExist() {
         ADD COLUMN viewer_token_created_at TIMESTAMP WITH TIME ZONE;
     `)
     }
+
+    await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_viewer_token_idx
+      ON users(viewer_token)
+      WHERE viewer_token IS NOT NULL;
+  `)
 
     await query(`
     CREATE UNIQUE INDEX IF NOT EXISTS users_viewer_token_hash_idx
@@ -340,12 +361,13 @@ export async function issueUserViewerToken(userId: string) {
     const result = await query(
         `
       UPDATE users
-        SET viewer_token_hash = $2,
+        SET viewer_token = $2,
+            viewer_token_hash = $3,
             viewer_token_created_at = CURRENT_TIMESTAMP
         WHERE id = $1 AND deleted = FALSE
-        RETURNING id, email, name, role, balance
+        RETURNING id, email, name, role, balance, viewer_token
     `,
-        [userId, tokenHash]
+        [userId, token, tokenHash]
     )
 
     if (result.rows.length === 0) {
@@ -358,6 +380,35 @@ export async function issueUserViewerToken(userId: string) {
     }
 }
 
+export async function getOrCreateUserViewerToken(userId: string) {
+    await ensureUserTableExists()
+
+    const existingResult = await query(
+        `
+      SELECT id, email, name, role, balance, viewer_token
+      FROM users
+      WHERE id = $1
+        AND deleted = FALSE
+      LIMIT 1
+    `,
+        [userId]
+    )
+
+    if (existingResult.rows.length === 0) {
+        throw new Error('User not found')
+    }
+
+    const existingUser = existingResult.rows[0]
+    if (existingUser.viewer_token) {
+        return {
+            token: existingUser.viewer_token,
+            user: existingUser,
+        }
+    }
+
+    return issueUserViewerToken(userId)
+}
+
 export async function getUserByViewerToken(
     token: string
 ): Promise<User | null> {
@@ -365,14 +416,14 @@ export async function getUserByViewerToken(
 
     const result = await query(
         `
-      SELECT id, email, name, role, balance, deleted,
-        viewer_token_hash IS NOT NULL AS has_viewer_token
+      SELECT id, email, name, role, balance, deleted, viewer_token,
+        COALESCE(viewer_token IS NOT NULL, viewer_token_hash IS NOT NULL) AS has_viewer_token
       FROM users
-      WHERE viewer_token_hash = $1
+      WHERE (viewer_token = $1 OR viewer_token_hash = $2)
         AND deleted = FALSE
       LIMIT 1
     `,
-        [hashViewerToken(token)]
+        [token, hashViewerToken(token)]
     )
 
     return result.rows[0] || null

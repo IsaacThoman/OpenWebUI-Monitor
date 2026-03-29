@@ -1,10 +1,10 @@
 """
 title: Usage Monitor Button (v2)
 author: VariantConst & OVINC CN (ported w/ button)
-version: 0.4.0
+version: 0.5.0
 icon_url: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAACMElEQVR4nO2ZMWgUQRSGJ4mFgZBGQTAgCqawSbASg6YIFkEsPbCQHNzd/v/sHBe4IvUSUtqlThcCSZEiXUharWxURC20SDCQIGKMxjTBk4E7MhlO7naX3M7C/PCamZud9817M/NuVwgvLy8vZ0VylOQ6ySOSjR7bEYA1kiNpnP+egeMNy74lgmiufMMRW00CkEXaNP5jh0kAzj1E9FhMO78HSCn6CDBeDsbdmM5FgB7gvHwEmPE9kFoeIGvRp1B6AXgOAEqpoVxGAMCenhvAjdiDPUAKlcvlayQJ4FczArO1Wm04FxEAUCV53O6vJYBppwGklKUONdWJlPKukwBRFF0iuW/NuwLgpdkGYMtJAAD3rTnXW2AAvhjtp9Vq9YqLAAVrpecMXxatvknnAEg+tZycb/VJKZ+R3G4ZgAfOAYRhOGYBHJC8mfiBGZxCfSQ/WhBfpZRPEj0to2P0Ybs7AMCmUup2Li6yIAgmrFOnBfFH74Vc1ELFYvGyPoWaL3ZNP05JPs5TMXcVwIYViU96v3Qz+GfcVyVxLE40SL43x4ZheKcbgLVeApD8bazyG6tvwRrfOY30R4U2OXiRAJ+N/h9RFPUbi/nCHBsEwSPRjUql0nX9ceEi0qkNwLL1mxndXq/XBwF8MPsqlcot4ZqklFMWwF+SrwDsWu2vhasCsNQhcicA7glXVSgUBnQRZ25oY2O/1SW3yIOUUkMAKk3nd0iOi7wpPKtO32XtSyJ1C/APUWkkXC3hgzUAAAAASUVORK5CYII=
 required_open_webui_version: 0.4.0
-requirements: pydantic
+requirements: pydantic, httpx
 license: MIT
 """
 
@@ -12,6 +12,7 @@ import os
 import json
 from typing import Optional
 from pydantic import BaseModel, Field
+from httpx import AsyncClient
 
 TRANSLATIONS = {
     "en": {
@@ -24,6 +25,7 @@ TRANSLATIONS = {
         "tokens": "Tokens: {input}+{output}",
         "time": "Time: {elapsed:.2f}s",
         "tps": "{tps:.2f} T/s",
+        "portal": "Account: {url}",
     },
     "zh": {
         "no_assistant": "没有找到assistant消息",
@@ -35,6 +37,7 @@ TRANSLATIONS = {
         "tokens": "Token: {input}+{output}",
         "time": "耗时: {elapsed:.2f}s",
         "tps": "{tps:.2f} T/s",
+        "portal": "账户统计: {url}",
     },
 }
 
@@ -71,6 +74,21 @@ class Action:
             description="是否显示每秒输出token数 / Show output tokens/sec",
             json_schema_extra={"ui:group": "显示设置"},
         )
+        show_account_url: bool = Field(
+            default=True,
+            description="是否显示账户统计链接 / Show account stats link",
+            json_schema_extra={"ui:group": "显示设置"},
+        )
+        api_endpoint: str = Field(
+            default="",
+            description="openwebui-monitor base URL",
+            json_schema_extra={"ui:group": "连接设置"},
+        )
+        api_key: str = Field(
+            default="",
+            description="openwebui-monitor API key",
+            json_schema_extra={"ui:group": "连接设置"},
+        )
 
     def __init__(self):
         self.valves = self.Valves()
@@ -83,6 +101,30 @@ class Action:
         lang = self.valves.language if self.valves.language in TRANSLATIONS else "en"
         text = TRANSLATIONS[lang].get(key, TRANSLATIONS["en"][key])
         return text.format(**kwargs) if kwargs else text
+
+    async def _get_account_url(self, user: Optional[dict]) -> Optional[str]:
+        if (
+            not self.valves.show_account_url
+            or not self.valves.api_endpoint
+            or not self.valves.api_key
+            or not user
+        ):
+            return None
+
+        try:
+            async with AsyncClient(timeout=10.0) as client:
+                response = await client.post(
+                    f"{self.valves.api_endpoint.rstrip('/')}/api/v1/user-portal/link",
+                    headers={"Authorization": f"Bearer {self.valves.api_key}"},
+                    json={"user": user},
+                )
+                response.raise_for_status()
+                data = response.json()
+                if not data.get("success"):
+                    return None
+                return data.get("data", {}).get("url")
+        except Exception:
+            return None
 
     async def action(
         self,
@@ -181,6 +223,10 @@ class Action:
             ):
                 tps = stats["output_tokens"] / elapsed
                 parts.append(self._t("tps", tps=tps))
+
+        account_url = await self._get_account_url(user)
+        if account_url:
+            parts.append(self._t("portal", url=account_url))
 
         line = " | ".join(parts)
 
