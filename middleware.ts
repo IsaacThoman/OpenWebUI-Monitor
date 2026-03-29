@@ -32,9 +32,7 @@ function createLoginRedirect(request: NextRequest): NextResponse {
     return NextResponse.redirect(new URL('/account/login', request.url))
 }
 
-function getUserPortalSession(
-    request: NextRequest
-): UserPortalSession | null {
+function getUserPortalSession(request: NextRequest): UserPortalSession | null {
     const token = request.cookies.get(USER_PORTAL_COOKIE)?.value
 
     if (!token) {
@@ -128,5 +126,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico|static/).*)'],
 }

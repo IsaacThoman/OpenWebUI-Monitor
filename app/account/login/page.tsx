@@ -93,14 +93,14 @@ function AccountLoginContent() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center px-4 py-12 bg-dot-pattern">
+        <div className="flex min-h-screen items-center justify-center px-4 py-12 bg-background">
             <div className="w-full max-w-md border p-6">
                 <div className="mb-6 text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center bg-muted overflow-hidden rounded-md">
+                    <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center overflow-hidden">
                         <img
                             src="/static/favicon.png"
                             alt="Logo"
-                            className="h-8 w-8 object-contain"
+                            className="h-14 w-14 object-contain"
                         />
                     </div>
                     <h1 className="text-xl font-medium text-foreground">
