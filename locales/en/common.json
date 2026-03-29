@@ -355,7 +355,8 @@
             "required": "Enter your stats link or token",
             "invalidLink": "This stats link is invalid or expired",
             "missingLink": "Missing stats link",
-            "failed": "Failed to sign in"
+            "failed": "Failed to sign in",
+            "help": "Need help? Contact your administrator"
         },
         "account": {
             "badge": "Account overview",
@@ -364,6 +365,11 @@
             "loadFailed": "Failed to load account stats",
             "never": "No activity yet",
             "empty": "No usage records yet.",
+            "copyUrl": {
+                "label": "Copy login URL",
+                "copied": "Copied!",
+                "success": "Login URL copied to clipboard"
+            },
             "cards": {
                 "balance": "Current balance",
                 "totalCalls": "Total calls",
@@ -377,6 +383,7 @@
                 "cost": "Spend"
             },
             "overview": {
+                "title": "Lifetime Overview",
                 "totalSpend": "Lifetime spend",
                 "averageCost": "Average per call",
                 "firstUse": "First usage"

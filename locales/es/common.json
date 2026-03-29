@@ -358,7 +358,8 @@
             "required": "Ingresa tu enlace o token de estadísticas",
             "invalidLink": "Este enlace de estadísticas es inválido o expiró",
             "missingLink": "Falta el enlace de estadísticas",
-            "failed": "Error al iniciar sesión"
+            "failed": "Error al iniciar sesión",
+            "help": "¿Necesitas ayuda? Contacta a tu administrador"
         },
         "account": {
             "badge": "Resumen de cuenta",
@@ -367,6 +368,11 @@
             "loadFailed": "Error al cargar las estadísticas de la cuenta",
             "never": "Aún no hay actividad",
             "empty": "Aún no hay registros de uso.",
+            "copyUrl": {
+                "label": "Copiar URL de inicio de sesión",
+                "copied": "¡Copiado!",
+                "success": "URL de inicio de sesión copiada al portapapeles"
+            },
             "cards": {
                 "balance": "Saldo actual",
                 "totalCalls": "Llamadas totales",
@@ -380,6 +386,7 @@
                 "cost": "Gasto"
             },
             "overview": {
+                "title": "Resumen de por vida",
                 "totalSpend": "Gasto acumulado",
                 "averageCost": "Promedio por llamada",
                 "firstUse": "Primer uso"

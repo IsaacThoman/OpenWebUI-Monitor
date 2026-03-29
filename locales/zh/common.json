@@ -357,7 +357,8 @@
             "required": "请输入统计链接或令牌",
             "invalidLink": "该统计链接无效或已失效",
             "missingLink": "缺少统计链接",
-            "failed": "登录失败"
+            "failed": "登录失败",
+            "help": "需要帮助？请联系管理员"
         },
         "account": {
             "badge": "账户概览",
@@ -366,6 +367,11 @@
             "loadFailed": "加载账户统计失败",
             "never": "暂无使用记录",
             "empty": "暂无使用记录。",
+            "copyUrl": {
+                "label": "复制登录链接",
+                "copied": "已复制!",
+                "success": "登录链接已复制到剪贴板"
+            },
             "cards": {
                 "balance": "当前余额",
                 "totalCalls": "总调用次数",
@@ -379,6 +385,7 @@
                 "cost": "消费"
             },
             "overview": {
+                "title": "总览",
                 "totalSpend": "累计消费",
                 "averageCost": "平均每次调用",
                 "firstUse": "首次使用"

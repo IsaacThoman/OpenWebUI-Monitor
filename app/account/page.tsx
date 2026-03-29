@@ -4,18 +4,21 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
     BarChart3,
+    Check,
     Clock3,
-    Loader2,
+    Copy,
+    CreditCard,
+    ExternalLink,
     LogOut,
+    Loader2,
     Sparkles,
     Wallet,
+    Zap,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface UserPortalResponse {
     success: boolean
@@ -27,6 +30,7 @@ interface UserPortalResponse {
             name: string
             role: string
             balance: number
+            viewerToken: string | null
         }
         overview: {
             totalCost: number
@@ -76,10 +80,24 @@ function formatDate(value: string | null, fallback: string): string {
     return new Date(value).toLocaleString()
 }
 
+function formatShortDate(value: string | null, fallback: string): string {
+    if (!value) {
+        return fallback
+    }
+
+    const date = new Date(value)
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    })
+}
+
 export default function AccountPage() {
     const [data, setData] = useState<UserPortalResponse['data'] | null>(null)
     const [loading, setLoading] = useState(true)
     const [loggingOut, setLoggingOut] = useState(false)
+    const [copied, setCopied] = useState(false)
     const router = useRouter()
     const { t } = useTranslation('common')
     const currencySymbol = t('common.currency')
@@ -129,10 +147,20 @@ export default function AccountPage() {
         }
     }
 
+    const handleCopyLoginUrl = () => {
+        if (!data?.profile.viewerToken) return
+
+        const loginUrl = `${window.location.origin}/u/${data.profile.viewerToken}`
+        navigator.clipboard.writeText(loginUrl)
+        setCopied(true)
+        toast.success(t('userPortal.account.copyUrl.success'))
+        setTimeout(() => setCopied(false), 2000)
+    }
+
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-                <div className="flex items-center gap-3 text-sm text-slate-300">
+                <div className="flex items-center gap-3 text-sm text-slate-400">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     {t('userPortal.account.loading')}
                 </div>
@@ -145,329 +173,413 @@ export default function AccountPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 px-6 py-8 text-white">
-            <div className="mx-auto flex max-w-6xl flex-col gap-6">
-                <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-                    <div className="space-y-3">
-                        <Badge className="w-fit bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/15">
-                            {t('userPortal.account.badge')}
-                        </Badge>
-                        <div>
-                            <h1 className="text-3xl font-semibold tracking-tight">
-                                {data.profile.name}
-                            </h1>
-                            <p className="mt-1 text-sm text-slate-300">
-                                {data.profile.email}
-                            </p>
+        <div className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-5xl">
+                {/* Header */}
+                <div className="mb-8 flex flex-col gap-4 border-b border-slate-800 pb-6 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-white">
+                            {data.profile.name}
+                        </h1>
+                        <p className="mt-1 text-sm text-slate-400">
+                            {data.profile.email}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                            <span className="inline-flex items-center rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300">
+                                {data.profile.role}
+                            </span>
                         </div>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        className="border-white/15 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                        onClick={handleLogout}
-                        disabled={loggingOut}
-                    >
-                        {loggingOut ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                            <LogOut className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col gap-2 sm:items-end">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-slate-400 hover:text-white"
+                            onClick={handleLogout}
+                            disabled={loggingOut}
+                        >
+                            {loggingOut ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <LogOut className="mr-2 h-4 w-4" />
+                            )}
+                            {t('userPortal.account.logout')}
+                        </Button>
+
+                        {data.profile.viewerToken && (
+                            <div className="flex items-center gap-2">
+                                <code className="hidden rounded bg-slate-800 px-2 py-1 text-xs text-slate-400 sm:block">
+                                    {window.location.origin}/u/
+                                    {data.profile.viewerToken.slice(0, 8)}...
+                                </code>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-slate-400 hover:text-white"
+                                    onClick={handleCopyLoginUrl}
+                                >
+                                    {copied ? (
+                                        <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                                    ) : (
+                                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                    )}
+                                    {copied
+                                        ? t('userPortal.account.copyUrl.copied')
+                                        : t('userPortal.account.copyUrl.label')}
+                                </Button>
+                            </div>
                         )}
-                        {t('userPortal.account.logout')}
-                    </Button>
+                    </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                                <Wallet className="h-4 w-4 text-emerald-300" />
+                {/* Stats Grid - Compact */}
+                <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
+                            <Wallet className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-slate-400">
                                 {t('userPortal.account.cards.balance')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold">
+                            </p>
+                            <p className="truncate text-lg font-semibold text-emerald-400">
                                 {formatCurrency(
                                     data.profile.balance,
                                     currencySymbol
                                 )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </p>
+                        </div>
+                    </div>
 
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                                <BarChart3 className="h-4 w-4 text-sky-300" />
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-500/10">
+                            <BarChart3 className="h-4 w-4 text-sky-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-slate-400">
                                 {t('userPortal.account.cards.totalCalls')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold">
+                            </p>
+                            <p className="truncate text-lg font-semibold text-white">
                                 {formatNumber(data.overview.totalCalls)}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </p>
+                        </div>
+                    </div>
 
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                                <Sparkles className="h-4 w-4 text-violet-300" />
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/10">
+                            <Sparkles className="h-4 w-4 text-violet-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-slate-400">
                                 {t('userPortal.account.cards.totalTokens')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold">
+                            </p>
+                            <p className="truncate text-lg font-semibold text-white">
                                 {formatNumber(data.overview.totalTokens)}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </p>
+                        </div>
+                    </div>
 
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="flex items-center gap-2 text-sm font-medium text-slate-300">
-                                <Clock3 className="h-4 w-4 text-amber-300" />
+                    <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-500/10">
+                            <Clock3 className="h-4 w-4 text-amber-400" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-slate-400">
                                 {t('userPortal.account.cards.lastActive')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-sm font-medium text-white">
-                                {formatDate(
-                                    data.overview.lastUseTime,
-                                    t('userPortal.account.never')
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </p>
+                            <p className="truncate text-sm font-medium text-white">
+                                {data.overview.lastUseTime
+                                    ? formatShortDate(
+                                          data.overview.lastUseTime,
+                                          t('userPortal.account.never')
+                                      )
+                                    : t('userPortal.account.never')}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader>
-                            <CardTitle>
-                                {t('userPortal.account.recentActivity.title')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-3">
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                {/* Main Content Grid */}
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Left Column - Usage Stats */}
+                    <div className="space-y-6 lg:col-span-2">
+                        {/* Recent Activity */}
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/30">
+                            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <Zap className="h-4 w-4 text-sky-400" />
+                                    <h2 className="text-sm font-medium text-white">
+                                        {t(
+                                            'userPortal.account.recentActivity.title'
+                                        )}
+                                    </h2>
+                                </div>
+                            </div>
+                            <div className="grid divide-y divide-slate-800 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.recentActivity.calls'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-xl font-semibold">
+                                    </p>
+                                    <p className="mt-1 text-xl font-semibold text-white">
                                         {formatNumber(
                                             data.recentWindow.totalCalls
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.recentActivity.tokens'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-xl font-semibold">
+                                    </p>
+                                    <p className="mt-1 text-xl font-semibold text-white">
                                         {formatNumber(
                                             data.recentWindow.totalTokens
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.recentActivity.cost'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-xl font-semibold">
+                                    </p>
+                                    <p className="mt-1 text-xl font-semibold text-white">
                                         {formatCurrency(
                                             data.recentWindow.totalCost,
                                             currencySymbol
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
                             </div>
+                        </div>
 
-                            <div className="grid gap-4 border-t border-white/10 pt-4 sm:grid-cols-3">
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                        {/* Lifetime Overview */}
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/30">
+                            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <CreditCard className="h-4 w-4 text-violet-400" />
+                                    <h2 className="text-sm font-medium text-white">
+                                        {t('userPortal.account.overview.title')}
+                                    </h2>
+                                </div>
+                            </div>
+                            <div className="grid divide-y divide-slate-800 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.overview.totalSpend'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-base font-semibold">
+                                    </p>
+                                    <p className="mt-1 text-lg font-semibold text-white">
                                         {formatCurrency(
                                             data.overview.totalCost,
                                             currencySymbol
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.overview.averageCost'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-base font-semibold">
+                                    </p>
+                                    <p className="mt-1 text-lg font-semibold text-white">
                                         {formatCurrency(
                                             data.overview.averageCost,
                                             currencySymbol
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
-                                <div>
-                                    <div className="text-sm text-slate-400">
+                                <div className="p-4">
+                                    <p className="text-xs text-slate-500">
                                         {t(
                                             'userPortal.account.overview.firstUse'
                                         )}
-                                    </div>
-                                    <div className="mt-1 text-base font-semibold">
-                                        {formatDate(
+                                    </p>
+                                    <p className="mt-1 text-lg font-semibold text-white">
+                                        {formatShortDate(
                                             data.overview.firstUseTime,
                                             t('userPortal.account.never')
                                         )}
-                                    </div>
+                                    </p>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
 
-                    <Card className="border-white/10 bg-white/5 text-white">
-                        <CardHeader>
-                            <CardTitle>
-                                {t('userPortal.account.topModels.title')}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {data.topModels.length === 0 ? (
-                                    <div className="text-sm text-slate-400">
-                                        {t('userPortal.account.empty')}
-                                    </div>
-                                ) : (
-                                    data.topModels.map((model) => (
+                        {/* Recent Records Table */}
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/30">
+                            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <Clock3 className="h-4 w-4 text-slate-400" />
+                                    <h2 className="text-sm font-medium text-white">
+                                        {t('userPortal.account.records.title')}
+                                    </h2>
+                                </div>
+                                <span className="text-xs text-slate-500">
+                                    {data.recentRecords.length}{' '}
+                                    {data.recentRecords.length === 1
+                                        ? 'record'
+                                        : 'records'}
+                                </span>
+                            </div>
+
+                            {data.recentRecords.length === 0 ? (
+                                <div className="p-8 text-center text-sm text-slate-500">
+                                    {t('userPortal.account.empty')}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-800 text-left text-xs text-slate-500">
+                                                <th className="px-4 py-2 font-medium">
+                                                    {t(
+                                                        'userPortal.account.records.time'
+                                                    )}
+                                                </th>
+                                                <th className="px-4 py-2 font-medium">
+                                                    {t(
+                                                        'userPortal.account.records.model'
+                                                    )}
+                                                </th>
+                                                <th className="px-4 py-2 font-medium">
+                                                    {t(
+                                                        'userPortal.account.records.tokens'
+                                                    )}
+                                                </th>
+                                                <th className="px-4 py-2 font-medium">
+                                                    {t(
+                                                        'userPortal.account.records.cost'
+                                                    )}
+                                                </th>
+                                                <th className="px-4 py-2 font-medium text-right">
+                                                    {t(
+                                                        'userPortal.account.records.balanceAfter'
+                                                    )}
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-800/50">
+                                            {data.recentRecords.map(
+                                                (record) => (
+                                                    <tr
+                                                        key={record.id}
+                                                        className="text-slate-300"
+                                                    >
+                                                        <td className="px-4 py-2.5 text-xs">
+                                                            {formatDate(
+                                                                record.useTime,
+                                                                '-'
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-2.5 font-medium text-white">
+                                                            {record.modelName}
+                                                        </td>
+                                                        <td className="px-4 py-2.5">
+                                                            {formatNumber(
+                                                                record.totalTokens
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-2.5">
+                                                            {formatCurrency(
+                                                                record.cost,
+                                                                currencySymbol
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-2.5 text-right font-medium text-emerald-400">
+                                                            {formatCurrency(
+                                                                record.balanceAfter,
+                                                                currencySymbol
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right Column - Top Models */}
+                    <div className="space-y-6">
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/30">
+                            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                    <BarChart3 className="h-4 w-4 text-slate-400" />
+                                    <h2 className="text-sm font-medium text-white">
+                                        {t(
+                                            'userPortal.account.topModels.title'
+                                        )}
+                                    </h2>
+                                </div>
+                            </div>
+
+                            {data.topModels.length === 0 ? (
+                                <div className="p-8 text-center text-sm text-slate-500">
+                                    {t('userPortal.account.empty')}
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-800">
+                                    {data.topModels.map((model, index) => (
                                         <div
                                             key={model.modelName}
-                                            className="rounded-2xl border border-white/10 bg-black/20 p-4"
+                                            className="flex items-center justify-between px-4 py-3"
                                         >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <div className="font-medium text-white">
+                                            <div className="flex items-center gap-3">
+                                                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-800 text-xs font-medium text-slate-400">
+                                                    {index + 1}
+                                                </span>
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-medium text-white">
                                                         {model.modelName}
-                                                    </div>
-                                                    <div className="mt-1 text-xs text-slate-400">
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">
                                                         {formatNumber(
                                                             model.totalCalls
                                                         )}{' '}
                                                         {t(
                                                             'userPortal.account.topModels.calls'
                                                         )}
-                                                    </div>
-                                                </div>
-                                                <div className="text-right text-sm font-medium text-emerald-300">
-                                                    {formatCurrency(
-                                                        model.totalCost,
-                                                        currencySymbol
-                                                    )}
+                                                    </p>
                                                 </div>
                                             </div>
+                                            <span className="text-sm font-medium text-emerald-400">
+                                                {formatCurrency(
+                                                    model.totalCost,
+                                                    currencySymbol
+                                                )}
+                                            </span>
                                         </div>
-                                    ))
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                <Card className="border-white/10 bg-white/5 text-white">
-                    <CardHeader>
-                        <CardTitle>
-                            {t('userPortal.account.records.title')}
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full text-sm">
-                                <thead className="text-left text-slate-400">
-                                    <tr className="border-b border-white/10">
-                                        <th className="pb-3 pr-4 font-medium">
-                                            {t(
-                                                'userPortal.account.records.time'
-                                            )}
-                                        </th>
-                                        <th className="pb-3 pr-4 font-medium">
-                                            {t(
-                                                'userPortal.account.records.model'
-                                            )}
-                                        </th>
-                                        <th className="pb-3 pr-4 font-medium">
-                                            {t(
-                                                'userPortal.account.records.tokens'
-                                            )}
-                                        </th>
-                                        <th className="pb-3 pr-4 font-medium">
-                                            {t(
-                                                'userPortal.account.records.cost'
-                                            )}
-                                        </th>
-                                        <th className="pb-3 font-medium">
-                                            {t(
-                                                'userPortal.account.records.balanceAfter'
-                                            )}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {data.recentRecords.length === 0 ? (
-                                        <tr>
-                                            <td
-                                                colSpan={5}
-                                                className="py-6 text-center text-slate-400"
-                                            >
-                                                {t('userPortal.account.empty')}
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        data.recentRecords.map((record) => (
-                                            <tr
-                                                key={record.id}
-                                                className="border-b border-white/5 align-top"
-                                            >
-                                                <td className="py-3 pr-4 text-slate-300">
-                                                    {formatDate(
-                                                        record.useTime,
-                                                        '-'
-                                                    )}
-                                                </td>
-                                                <td className="py-3 pr-4 font-medium text-white">
-                                                    {record.modelName}
-                                                </td>
-                                                <td className="py-3 pr-4 text-slate-300">
-                                                    {formatNumber(
-                                                        record.totalTokens
-                                                    )}
-                                                </td>
-                                                <td className="py-3 pr-4 text-slate-300">
-                                                    {formatCurrency(
-                                                        record.cost,
-                                                        currencySymbol
-                                                    )}
-                                                </td>
-                                                <td className="py-3 text-slate-300">
-                                                    {formatCurrency(
-                                                        record.balanceAfter,
-                                                        currencySymbol
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    </CardContent>
-                </Card>
+
+                        {/* Quick Links / Info */}
+                        <div className="rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+                            <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-slate-500">
+                                Quick Access
+                            </h3>
+                            <div className="space-y-2">
+                                <a
+                                    href="/"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-md p-2 text-sm text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    OpenWebUI Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

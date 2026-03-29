@@ -27,6 +27,7 @@ export interface UserPortalStats {
         name: string
         role: string
         balance: number
+        viewerToken: string | null
     }
     overview: {
         totalCost: number
@@ -410,7 +411,7 @@ export async function getUserPortalStats(
     ] = await Promise.all([
         query(
             `
-          SELECT id, email, name, role, balance
+          SELECT id, email, name, role, balance, viewer_token
           FROM users
           WHERE id = $1 AND deleted = FALSE
           LIMIT 1
@@ -492,6 +493,7 @@ export async function getUserPortalStats(
             name: userResult.rows[0].name,
             role: userResult.rows[0].role,
             balance: parseFloat(userResult.rows[0].balance),
+            viewerToken: userResult.rows[0].viewer_token || null,
         },
         overview: {
             totalCost,
