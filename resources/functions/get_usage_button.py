@@ -130,13 +130,17 @@ class Action:
         self,
         body: dict,
         user: Optional[dict] = None,
+        __user__: Optional[dict] = None,
         __event_emitter__=None,
         __event_call__=None,
+        **kwargs,
     ) -> Optional[dict]:
         """
         Reads /app/backend/data/record/{last_assistant_message_id}.json
         and pushes a one-line status to the UI.
         """
+        resolved_user = user or __user__
+
         # Locate last assistant message
         messages = body.get("messages", [])
         assistant_indexes = [
@@ -224,7 +228,7 @@ class Action:
                 tps = stats["output_tokens"] / elapsed
                 parts.append(self._t("tps", tps=tps))
 
-        account_url = await self._get_account_url(user)
+        account_url = await self._get_account_url(resolved_user)
         if account_url:
             parts.append(self._t("portal", url=account_url))
 

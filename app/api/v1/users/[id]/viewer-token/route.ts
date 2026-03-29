@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { verifyApiToken } from '@/lib/auth'
 import { issueUserViewerToken } from '@/lib/db/users'
+import { getPublicAppUrl } from '@/lib/public-url'
 
 export async function POST(
     req: NextRequest,
@@ -14,7 +15,7 @@ export async function POST(
 
     try {
         const { token, user } = await issueUserViewerToken(params.id)
-        const origin = new URL(req.url).origin
+        const origin = getPublicAppUrl(req)
 
         return NextResponse.json({
             success: true,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 
 import { verifyFunctionApiKey } from '@/lib/auth'
 import { getOrCreateUser, getOrCreateUserViewerToken } from '@/lib/db/users'
+import { getPublicAppUrl } from '@/lib/public-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
             role: user.role,
         })
         const { token } = await getOrCreateUserViewerToken(ensuredUser.id)
-        const origin = new URL(request.url).origin
+        const origin = getPublicAppUrl(request)
 
         return NextResponse.json({
             success: true,
