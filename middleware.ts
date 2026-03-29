@@ -15,6 +15,10 @@ export async function middleware(request: NextRequest) {
         pathname.startsWith('/api/v1/config') ||
         pathname.startsWith('/api/v1/users')
     ) {
+        console.log(
+            `[Middleware] ${request.method} ${pathname} - Checking auth`
+        )
+
         const token =
             pathname.startsWith('/api/v1/panel') ||
             pathname.startsWith('/api/v1/config') ||
@@ -24,7 +28,9 @@ export async function middleware(request: NextRequest) {
                 : API_KEY
 
         if (!token) {
-            console.error('API Key or Access Token is not set')
+            console.error(
+                `[Middleware] ${pathname} - Server configuration error: required token is not set`
+            )
             return NextResponse.json(
                 { error: 'Server configuration error' },
                 { status: 500 }
@@ -32,13 +38,25 @@ export async function middleware(request: NextRequest) {
         }
 
         const authHeader = request.headers.get('authorization')
+        console.log(
+            `[Middleware] ${pathname} - Authorization header present: ${!!authHeader}`
+        )
+
         const providedKey = authHeader?.replace('Bearer ', '')
 
-        if (!providedKey || providedKey !== token) {
-            console.log('Invalid API key or token')
+        if (!providedKey) {
+            console.log(`[Middleware] ${pathname} - No token provided`)
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        if (providedKey !== token) {
+            console.log(
+                `[Middleware] ${pathname} - Invalid token (provided: ${providedKey.substring(0, 4)}...${providedKey.slice(-4)}, expected: ${token.substring(0, 4)}...${token.slice(-4)})`
+            )
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        console.log(`[Middleware] ${pathname} - Authentication successful`)
         return NextResponse.next()
     } else if (!pathname.startsWith('/api/')) {
         if (!ACCESS_TOKEN) {

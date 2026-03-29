@@ -32,22 +32,38 @@ export default function TokenPage() {
         }
 
         setLoading(true)
+        console.log(
+            `[TokenPage] Attempting login with token: ${token.substring(0, 4)}...${token.slice(-4)}`
+        )
+
         try {
             localStorage.setItem('access_token', token)
+            console.log('[TokenPage] Token stored in localStorage')
+
             const res = await fetch('/api/v1/config', {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             })
 
+            console.log(
+                `[TokenPage] Response status: ${res.status} ${res.statusText}`
+            )
+
             if (res.ok) {
+                console.log('[TokenPage] Login successful, redirecting to home')
                 toast.success(t('auth.loginSuccess'))
                 window.location.href = '/'
             } else {
+                const errorData = await res.json().catch(() => ({}))
+                console.log(
+                    `[TokenPage] Login failed: ${JSON.stringify(errorData)}`
+                )
                 toast.error(t('auth.invalidToken'))
                 localStorage.removeItem('access_token')
             }
         } catch (error) {
+            console.error('[TokenPage] Error during login:', error)
             toast.error(t('auth.verificationFailed'))
             localStorage.removeItem('access_token')
         } finally {
