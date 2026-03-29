@@ -25,7 +25,7 @@ TRANSLATIONS = {
         "tokens": "Tokens: {input}+{output}",
         "time": "Time: {elapsed:.2f}s",
         "tps": "{tps:.2f} T/s",
-        "portal": "Account: {url}",
+        "portal_link": "\n\n[Open your account stats]({url})",
     },
     "zh": {
         "no_assistant": "没有找到assistant消息",
@@ -37,7 +37,7 @@ TRANSLATIONS = {
         "tokens": "Token: {input}+{output}",
         "time": "耗时: {elapsed:.2f}s",
         "tps": "{tps:.2f} T/s",
-        "portal": "账户统计: {url}",
+        "portal_link": "\n\n[打开你的账户统计]({url})",
     },
 }
 
@@ -229,8 +229,6 @@ class Action:
                 parts.append(self._t("tps", tps=tps))
 
         account_url = await self._get_account_url(resolved_user)
-        if account_url:
-            parts.append(self._t("portal", url=account_url))
 
         line = " | ".join(parts)
 
@@ -241,5 +239,17 @@ class Action:
                     "data": {"description": line, "done": True},
                 }
             )
+
+            if account_url:
+                await __event_emitter__(
+                    {
+                        "type": "message",
+                        "data": {
+                            "content": self._t(
+                                "portal_link", url=account_url
+                            )
+                        },
+                    }
+                )
 
         return None
