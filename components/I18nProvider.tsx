@@ -25,7 +25,7 @@ const i18n = i18next
                 common: esCommon,
             },
         },
-        fallbackLng: 'zh',
+        fallbackLng: 'en',
         interpolation: {
             escapeValue: false,
         },
@@ -40,7 +40,9 @@ export default function I18nProvider({ children }: PropsWithChildren) {
                 zh: 'zh-cn',
                 es: 'es',
             }
-            const locale = dayjsLocaleMap[i18next.language] || 'zh-cn'
+            const locale =
+                dayjsLocaleMap[i18n.resolvedLanguage || i18n.language] ||
+                'en'
             dayjs.locale(locale)
         }
 
@@ -48,12 +50,12 @@ export default function I18nProvider({ children }: PropsWithChildren) {
         updateDayjsLocale()
 
         // Listen for language changes
-        i18next.on('languageChanged', updateDayjsLocale)
+        i18n.on('languageChanged', updateDayjsLocale)
 
         return () => {
-            i18next.off('languageChanged', updateDayjsLocale)
+            i18n.off('languageChanged', updateDayjsLocale)
         }
     }, [])
 
-    return <I18nextProvider i18n={i18next}>{children}</I18nextProvider>
+    return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 }

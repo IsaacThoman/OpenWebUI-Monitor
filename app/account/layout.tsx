@@ -378,13 +378,13 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                                         },
                                         {
                                             key: 'zh',
-                                            label: '简体中文',
+                                            label: 'Chinese',
                                             onClick: () =>
                                                 handleLanguageChange('zh'),
                                         },
                                         {
                                             key: 'es',
-                                            label: 'Español',
+                                            label: 'Spanish',
                                             onClick: () =>
                                                 handleLanguageChange('es'),
                                         },

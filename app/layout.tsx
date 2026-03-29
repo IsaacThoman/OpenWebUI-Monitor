@@ -21,6 +21,9 @@ const geistMono = localFont({
 export const metadata: Metadata = {
     title: 'OpenWebUI Monitor',
     description: 'Monitor and analyze your OpenWebUI usage data',
+    other: {
+        google: 'notranslate',
+    },
 }
 
 export default function RootLayout({
@@ -29,8 +32,8 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="zh-CN">
-            <body>
+        <html lang="en" translate="no" className="notranslate">
+            <body className={`${geistSans.variable} ${geistMono.variable}`}>
                 <div id="modal-root" className="relative z-[100]" />
                 <I18nProvider>
                     <HtmlLangWrapper />

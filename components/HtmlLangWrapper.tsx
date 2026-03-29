@@ -7,16 +7,15 @@ export default function HtmlLangWrapper() {
     const { i18n } = useTranslation()
 
     useEffect(() => {
-        // Update the HTML lang attribute when language changes
         const langMap: Record<string, string> = {
             en: 'en',
             zh: 'zh-CN',
             es: 'es',
         }
 
-        const lang = langMap[i18n.language] || 'zh-CN'
+        const lang = langMap[i18n.resolvedLanguage || i18n.language] || 'en'
         document.documentElement.lang = lang
-    }, [i18n.language])
+    }, [i18n.language, i18n.resolvedLanguage])
 
     return null
 }
