@@ -20,12 +20,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Trash2, Search, X, Unlock, Lock, Link2 } from 'lucide-react'
+import { Trash2, Search, X, Unlock, Lock, Link2, Loader2 } from 'lucide-react'
 import { EditableCell } from '@/components/editable-cell'
 import { copyTextToClipboard } from '@/lib/clipboard'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 
 interface User {
     id: string
@@ -269,7 +269,7 @@ const BlockConfirmModal = ({
 
 const LoadingState = ({ t }: { t: TFunction }) => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="h-8 w-8 border-2 border-primary/10 border-t-primary animate-spin mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
         <h3 className="text-sm font-medium text-muted-foreground">
             {t('users.loading')}
         </h3>
@@ -799,8 +799,10 @@ export default function UsersPanel() {
               py-3
               h-12
               leading-normal
-              bg-transparent
-              border-0
+              !bg-transparent
+              !border-0
+              !rounded-none
+              !shadow-none
               ring-0
               focus:ring-0
               placeholder:text-muted-foreground/50
@@ -810,7 +812,7 @@ export default function UsersPanel() {
                         allowClear={{
                             clearIcon: searchValue ? (
                                 <button
-                                    className="p-1.5 hover:bg-muted transition-colors z-10 
+                                    className="p-1.5 hover:bg-muted/50 transition-colors z-10 
                     bg-muted text-muted-foreground"
                                     onClick={handleClear}
                                 >
@@ -823,8 +825,7 @@ export default function UsersPanel() {
                     <div className="absolute right-4 flex items-center pointer-events-auto z-20">
                         <button
                             onClick={handleSearch}
-                            className="text-xs bg-primary/10 text-primary hover:bg-primary/20 
-                transition-colors px-3 py-1.5 font-medium"
+                            className="text-xs border border-border bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors px-3 py-1.5 font-medium rounded-none"
                         >
                             {t('users.search')}
                         </button>

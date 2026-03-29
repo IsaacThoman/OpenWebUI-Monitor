@@ -446,13 +446,15 @@ export async function getUserPortalStats(
         query(
             `
           SELECT
-            model_name,
-            COALESCE(SUM(cost), 0) AS total_cost,
+            u.model_name,
+            COALESCE(mp.name, u.model_name) as display_name,
+            COALESCE(SUM(u.cost), 0) AS total_cost,
             COUNT(*) AS total_calls,
-            COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
-          FROM user_usage_records
-          WHERE user_id = $1
-          GROUP BY model_name
+            COALESCE(SUM(u.input_tokens + u.output_tokens), 0) AS total_tokens
+          FROM user_usage_records u
+          LEFT JOIN model_prices mp ON u.model_name = mp.id
+          WHERE u.user_id = $1
+          GROUP BY u.model_name, mp.name
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
@@ -461,16 +463,18 @@ export async function getUserPortalStats(
         query(
             `
           SELECT
-            id,
-            use_time,
-            model_name,
-            input_tokens,
-            output_tokens,
-            cost,
-            balance_after
-          FROM user_usage_records
-          WHERE user_id = $1
-          ORDER BY use_time DESC
+            u.id,
+            u.use_time,
+            u.model_name,
+            COALESCE(mp.name, u.model_name) as display_name,
+            u.input_tokens,
+            u.output_tokens,
+            u.cost,
+            u.balance_after
+          FROM user_usage_records u
+          LEFT JOIN model_prices mp ON u.model_name = mp.id
+          WHERE u.user_id = $1
+          ORDER BY u.use_time DESC
           LIMIT 10
         `,
             [userId]
@@ -509,7 +513,7 @@ export async function getUserPortalStats(
             totalTokens: parseInt(recentWindow.total_tokens || '0'),
         },
         topModels: topModelsResult.rows.map((row) => ({
-            modelName: row.model_name,
+            modelName: row.display_name || row.model_name,
             totalCost: parseFloat(row.total_cost),
             totalCalls: parseInt(row.total_calls),
             totalTokens: parseInt(row.total_tokens),
@@ -517,7 +521,7 @@ export async function getUserPortalStats(
         recentRecords: recordsResult.rows.map((row) => ({
             id: row.id,
             useTime: row.use_time,
-            modelName: row.model_name,
+            modelName: row.display_name || row.model_name,
             inputTokens: row.input_tokens,
             outputTokens: row.output_tokens,
             totalTokens: row.input_tokens + row.output_tokens,
@@ -552,7 +556,7 @@ export async function getUserPortalStatsForTimeRange(
     await ensureUserTableExists()
 
     const timeCondition = days
-        ? `AND use_time >= NOW() - INTERVAL '${days} days'`
+        ? `AND u.use_time >= NOW() - INTERVAL '${days} days'`
         : ''
 
     const [statsResult, topModelsResult, recordsResult] = await Promise.all([
@@ -564,20 +568,22 @@ export async function getUserPortalStatsForTimeRange(
             COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
           FROM user_usage_records
           WHERE user_id = $1
-          ${timeCondition}
+          ${timeCondition.replace(/u\./g, '')}
         `,
             [userId]
         ),
         query(
             `
           SELECT
-            model_name,
-            COALESCE(SUM(cost), 0) AS total_cost,
+            u.model_name,
+            COALESCE(mp.name, u.model_name) as display_name,
+            COALESCE(SUM(u.cost), 0) AS total_cost,
             COUNT(*) AS total_calls
-          FROM user_usage_records
-          WHERE user_id = $1
+          FROM user_usage_records u
+          LEFT JOIN model_prices mp ON u.model_name = mp.id
+          WHERE u.user_id = $1
           ${timeCondition}
-          GROUP BY model_name
+          GROUP BY u.model_name, mp.name
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
@@ -586,17 +592,19 @@ export async function getUserPortalStatsForTimeRange(
         query(
             `
           SELECT
-            id,
-            use_time,
-            model_name,
-            input_tokens,
-            output_tokens,
-            cost,
-            balance_after
-          FROM user_usage_records
-          WHERE user_id = $1
+            u.id,
+            u.use_time,
+            u.model_name,
+            COALESCE(mp.name, u.model_name) as display_name,
+            u.input_tokens,
+            u.output_tokens,
+            u.cost,
+            u.balance_after
+          FROM user_usage_records u
+          LEFT JOIN model_prices mp ON u.model_name = mp.id
+          WHERE u.user_id = $1
           ${timeCondition}
-          ORDER BY use_time DESC
+          ORDER BY u.use_time DESC
           LIMIT 10
         `,
             [userId]
@@ -613,14 +621,14 @@ export async function getUserPortalStatsForTimeRange(
         totalCost,
         averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
         topModels: topModelsResult.rows.map((row) => ({
-            modelName: row.model_name,
+            modelName: row.display_name || row.model_name,
             totalCost: parseFloat(row.total_cost),
             totalCalls: parseInt(row.total_calls),
         })),
         recentRecords: recordsResult.rows.map((row) => ({
             id: row.id,
             useTime: row.use_time,
-            modelName: row.model_name,
+            modelName: row.display_name || row.model_name,
             totalTokens: row.input_tokens + row.output_tokens,
             cost: parseFloat(row.cost),
             balanceAfter: parseFloat(row.balance_after),

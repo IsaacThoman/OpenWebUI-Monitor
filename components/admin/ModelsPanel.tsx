@@ -10,13 +10,14 @@ import {
     InfoCircleOutlined,
     UpOutlined,
 } from '@ant-design/icons'
+import { Loader2 } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Progress } from 'antd'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { EditableCell } from '@/components/editable-cell'
 
 interface ModelResponse {
@@ -101,12 +102,6 @@ const TestProgressPanel = ({
     const progress = Math.round(
         ((successCount + errorCount) / totalCount) * 100
     )
-
-    useEffect(() => {
-        if (testingCount > 0) {
-            setIsExpanded(true)
-        }
-    }, [testingCount])
 
     return (
         <AnimatePresence>
@@ -251,7 +246,7 @@ const TestProgressPanel = ({
 
 const LoadingState = ({ t }: { t: (key: string) => string }) => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="h-8 w-8 border-2 border-primary/10 border-t-primary animate-spin mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
         <h3 className="text-sm font-medium text-muted-foreground">
             {t('models.loading')}
         </h3>

@@ -201,6 +201,8 @@ body {
     background: hsl(220 15% 12%) !important;
     border-color: hsl(220 15% 18%) !important;
     color: hsl(220 15% 85%) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 .admin-dark-theme .ant-input::placeholder {
@@ -211,6 +213,13 @@ body {
 .admin-dark-theme .ant-input-affix-wrapper:focus,
 .admin-dark-theme .ant-input-affix-wrapper-focused {
     border-color: hsl(220 15% 40%) !important;
+    box-shadow: none !important;
+}
+
+.admin-dark-theme .ant-input-group-addon,
+.admin-dark-theme .ant-input-search-button,
+.admin-dark-theme .ant-btn {
+    border-radius: 0 !important;
     box-shadow: none !important;
 }
 
@@ -233,6 +242,7 @@ body {
     background: hsl(220 15% 12%) !important;
     border-color: hsl(220 15% 18%) !important;
     color: hsl(220 15% 85%) !important;
+    border-radius: 0 !important;
 }
 
 .admin-dark-theme .ant-picker input {

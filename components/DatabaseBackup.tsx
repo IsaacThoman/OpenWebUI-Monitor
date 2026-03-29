@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import {
     Dialog,
@@ -101,16 +101,9 @@ export default function DatabaseBackup({
 
     return (
         <AnimatePresence>
-            <Toaster
-                richColors
-                position="top-center"
-                theme="light"
-                expand
-                duration={1500}
-            />
             {isOpen && (
                 <Dialog open={isOpen} onOpenChange={onClose}>
-                    <DialogContent className="w-[calc(100%-2rem)] !max-w-[400px] rounded-lg backdrop-blur-lg bg-white/90 border border-white/20 shadow-xl md:px-6">
+                    <DialogContent className="w-[calc(100%-2rem)] !max-w-[400px] bg-background border-border md:px-6">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -122,7 +115,7 @@ export default function DatabaseBackup({
                                         initial={{ scale: 0.8, opacity: 0 }}
                                         animate={{ scale: 1, opacity: 1 }}
                                         transition={{ delay: 0.1 }}
-                                        className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary/10"
+                                        className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center bg-primary/10"
                                     >
                                         <DatabaseIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                                     </motion.div>
@@ -143,14 +136,14 @@ export default function DatabaseBackup({
                             >
                                 <Card
                                     className={cn(
-                                        'cursor-pointer transition-all duration-300 hover:bg-accent/5',
-                                        'group relative overflow-hidden backdrop-blur-sm bg-white/50 border-white/20',
-                                        'hover:shadow-lg hover:scale-[1.02] transform-gpu'
+                                        'cursor-pointer transition-colors',
+                                        'group relative overflow-hidden bg-background border-border',
+                                        'hover:bg-muted/30'
                                     )}
                                     onClick={handleExport}
                                 >
                                     <CardContent className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6">
-                                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
                                             {isExporting ? (
                                                 <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-spin" />
                                             ) : (
@@ -170,9 +163,9 @@ export default function DatabaseBackup({
 
                                 <Card
                                     className={cn(
-                                        'cursor-pointer transition-all duration-300 hover:bg-accent/5',
-                                        'group relative overflow-hidden backdrop-blur-sm bg-white/50 border-white/20',
-                                        'hover:shadow-lg hover:scale-[1.02] transform-gpu'
+                                        'cursor-pointer transition-colors',
+                                        'group relative overflow-hidden bg-background border-border',
+                                        'hover:bg-muted/30'
                                     )}
                                     onClick={() =>
                                         fileInputRef.current?.click()
@@ -186,7 +179,7 @@ export default function DatabaseBackup({
                                         className="hidden"
                                     />
                                     <CardContent className="flex items-center gap-3 sm:gap-4 p-4 sm:p-6">
-                                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
+                                        <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
                                             {isImporting ? (
                                                 <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-spin" />
                                             ) : (

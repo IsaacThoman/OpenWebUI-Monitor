@@ -103,26 +103,20 @@ export function EditableCell({
                         className="
               !w-[calc(100%-32px)]
               !border
-              !border-slate-200
-              focus:!border-slate-300
-              !bg-white
-              !shadow-sm
-              hover:!shadow
-              focus:!shadow-md
+              !border-border
+              hover:!border-ring
+              focus:!border-ring
+              !bg-background
+              !shadow-none
               !px-2
               !py-1
               !h-7
               flex-1
-              !rounded-lg
-              !text-slate-600
+              !rounded-none
+              !text-foreground
               !text-sm
               !font-medium
-              placeholder:!text-slate-400/70
-              transition-all
-              duration-200
-              focus:!ring-2
-              focus:!ring-slate-200/50
-              focus:!ring-offset-0
+              placeholder:!text-muted-foreground
             "
                         placeholder={placeholder || t('common.enterValue')}
                         onPressEnter={handleSubmit}
@@ -135,19 +129,16 @@ export function EditableCell({
                         className={`
               h-7 w-7
               flex-shrink-0
-              bg-gradient-to-r from-slate-500/80 to-slate-600/80
-              hover:from-slate-600 hover:to-slate-700
-              text-white/90
-              shadow-sm
-              rounded-lg
-              transition-all
-              duration-200
-              hover:scale-105
-              active:scale-95
+              border
+              border-border
+              bg-muted
+              text-foreground
+              transition-colors
               p-0
               flex
               items-center
               justify-center
+              hover:bg-muted/80
               ${isSaving ? 'cursor-not-allowed opacity-70' : ''}
             `}
                         onClick={(e) => {
@@ -157,7 +148,7 @@ export function EditableCell({
                         disabled={isSaving}
                     >
                         {isSaving ? (
-                            <div className="w-3 h-3 rounded-full border-2 border-white/90 border-t-transparent animate-spin" />
+                            <div className="w-3 h-3 border-2 border-foreground/60 border-t-transparent animate-spin" />
                         ) : (
                             <CheckOutlined className="text-xs" />
                         )}
@@ -170,13 +161,11 @@ export function EditableCell({
             group
             px-2
             py-1
-            rounded-lg
             transition-colors
-            duration-200
             ${
                 disabled
                     ? 'cursor-not-allowed line-through'
-                    : 'cursor-pointer hover:bg-primary/5'
+                    : 'cursor-pointer hover:bg-muted/30'
             }
           `}
                 >
@@ -189,9 +178,9 @@ export function EditableCell({
               ${
                   disabled
                       ? 'text-muted-foreground/60'
-                      : 'text-primary/80 group-hover:text-primary'
+                      : 'text-foreground group-hover:text-foreground'
               }
-            `}
+             `}
                     >
                         {isPerMsgPrice && numericValue < 0 ? (
                             <span className="text-muted-foreground/60">

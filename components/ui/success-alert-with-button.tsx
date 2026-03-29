@@ -9,7 +9,7 @@ interface NotificationDemoProps {
 
 function NotificationDemo({ type, message, onClose }: NotificationDemoProps) {
     return (
-        <div className="z-[100] max-w-[400px] rounded-lg border border-border bg-background px-4 py-3 shadow-lg shadow-black/5">
+        <div className="z-[100] max-w-[400px] border border-border bg-background px-4 py-3 shadow-none">
             <div className="flex gap-2">
                 <p className="grow text-sm">
                     {type === 'success' ? (

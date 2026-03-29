@@ -32,5 +32,5 @@ export async function GET(
     const cookieStore = await cookies()
     cookieStore.set(USER_PORTAL_COOKIE, token, getUserPortalCookieOptions())
 
-    return NextResponse.redirect(new URL('/account', publicAppUrl))
+    return NextResponse.redirect(new URL('/account/personal', publicAppUrl))
 }

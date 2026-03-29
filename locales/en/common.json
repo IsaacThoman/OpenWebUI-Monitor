@@ -402,6 +402,12 @@
                 "tokens": "Tokens",
                 "cost": "Cost",
                 "balanceAfter": "Balance after"
+            },
+            "tabs": {
+                "personal": "Personal",
+                "users": "Users",
+                "models": "Models",
+                "analytics": "Analytics"
             }
         }
     }

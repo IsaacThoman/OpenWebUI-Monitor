@@ -78,7 +78,7 @@ export default function AccountLoginPage() {
                 throw new Error(data.error || t('userPortal.login.invalidLink'))
             }
 
-            router.push('/account')
+            router.replace('/account/personal')
             router.refresh()
         } catch (error) {
             toast.error(

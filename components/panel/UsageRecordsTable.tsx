@@ -5,6 +5,7 @@ import { Table, TablePaginationConfig, Select } from 'antd'
 import type { FilterValue } from 'antd/es/table/interface'
 import type { SorterResult } from 'antd/es/table/interface'
 import { useTranslation } from 'react-i18next'
+import { Loader2 } from 'lucide-react'
 
 const LOCALE_MAP: Record<string, string> = {
     en: 'en-US',
@@ -267,7 +268,7 @@ export default function UsageRecordsTable({
             <div className="sm:hidden space-y-4">
                 {loading ? (
                     <div className="flex justify-center py-8">
-                        <div className="w-6 h-6 border-2 border-muted border-t-foreground animate-spin" />
+                        <Loader2 className="h-6 w-6 animate-spin" />
                     </div>
                 ) : (
                     <>

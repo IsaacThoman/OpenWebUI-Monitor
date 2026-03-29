@@ -3,7 +3,7 @@ import localFont from 'next/font/local'
 import './globals.css'
 import Header from '@/components/Header'
 import AuthCheck from '@/components/AuthCheck'
-import { Toaster } from '@/components/ui/toaster'
+import { Toaster } from '@/components/ui/sonner'
 import I18nProvider from '@/components/I18nProvider'
 import HtmlLangWrapper from '@/components/HtmlLangWrapper'
 
