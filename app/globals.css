@@ -123,6 +123,7 @@ body {
 
 .admin-dark-theme .ant-table-container {
     border-color: hsl(220 15% 18%) !important;
+    border-radius: 0 !important;
 }
 
 .admin-dark-theme .ant-table-thead > tr > th,
@@ -147,6 +148,14 @@ body {
     background: hsl(220 15% 18%) !important;
 }
 
+/* Remove rounded corners from table elements */
+.admin-dark-theme .ant-table,
+.admin-dark-theme .ant-table-container,
+.admin-dark-theme .ant-table-thead > tr:first-child > th:first-child,
+.admin-dark-theme .ant-table-thead > tr:first-child > th:last-child {
+    border-radius: 0 !important;
+}
+
 /* Pagination */
 .admin-dark-theme .ant-pagination {
     color: hsl(220 15% 50%) !important;
@@ -155,6 +164,7 @@ body {
 .admin-dark-theme .ant-pagination-item {
     background: transparent !important;
     border-color: hsl(220 15% 18%) !important;
+    border-radius: 0 !important;
 }
 
 .admin-dark-theme .ant-pagination-item a {
@@ -164,6 +174,7 @@ body {
 .admin-dark-theme .ant-pagination-item-active {
     background: hsl(220 15% 20%) !important;
     border-color: hsl(220 15% 40%) !important;
+    border-radius: 0 !important;
 }
 
 .admin-dark-theme .ant-pagination-item-active a {
@@ -173,6 +184,7 @@ body {
 .admin-dark-theme .ant-pagination-prev button,
 .admin-dark-theme .ant-pagination-next button {
     color: hsl(220 15% 50%) !important;
+    border-radius: 0 !important;
 }
 
 .admin-dark-theme .ant-pagination-disabled button {

@@ -4,13 +4,10 @@ import { useRef, useEffect } from 'react'
 import ReactECharts from 'echarts-for-react'
 import type { ECharts } from 'echarts'
 import { Card as ShadcnCard } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { MetricToggle } from '@/components/ui/metric-toggle'
 import { useTranslation } from 'react-i18next'
 import { PieChartOutlined } from '@ant-design/icons'
-import { motion } from 'framer-motion'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ModelUsage {
     model_name: string
@@ -74,28 +71,25 @@ const getPieOption = (
         tooltip: {
             show: true,
             trigger: 'item',
-            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-            borderColor: 'rgba(51, 65, 85, 0.5)',
+            backgroundColor: 'hsl(220 15% 12%)',
+            borderColor: 'hsl(220 15% 18%)',
             borderWidth: 1,
-            padding: [14, 18],
+            padding: [12, 16],
             textStyle: {
-                color: '#e2e8f0',
-                fontSize: 13,
-                lineHeight: 20,
+                color: 'hsl(220 15% 90%)',
+                fontSize: 12,
+                lineHeight: 18,
             },
             formatter: (params: any) => {
                 const percentage = ((params.value / total) * 100).toFixed(1)
                 return `
-          <div class="flex flex-col gap-1.5">
-            <div class="font-medium" style="color: #f1f5f9">${params.name}</div>
+          <div class="flex flex-col gap-1">
+            <div class="font-medium" style="color: hsl(220 15% 90%)">${params.name}</div>
             <div class="flex items-center gap-2">
-              <span class="inline-block w-2 h-2 rounded-full" style="background-color: ${
-                  params.color
-              }"></span>
-              <span class="text-sm" style="color: #94a3b8">
+              <span class="text-xs" style="color: hsl(220 15% 55%)">
                 ${metric === 'cost' ? t('panel.byAmount') : t('panel.byCount')}
               </span>
-              <span class="font-mono text-sm font-medium" style="color: #e2e8f0">
+              <span class="font-mono text-sm font-medium" style="color: hsl(220 15% 90%)">
                 ${
                     metric === 'cost'
                         ? `${t('common.currency')}${params.value.toFixed(4)}`
@@ -103,31 +97,29 @@ const getPieOption = (
                 }
               </span>
             </div>
-            <div class="text-xs" style="color: #64748b">
-              <span class="font-medium" style="color: #94a3b8">${percentage}%</span>
+            <div class="text-xs" style="color: hsl(220 15% 50%)">
+              <span>${percentage}%</span>
             </div>
           </div>
         `
             },
-            extraCssText:
-                'box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4); border-radius: 8px;',
         },
         legend: {
             show: true,
             orient: 'horizontal',
             bottom: isSmallScreen ? 20 : 10,
             type: 'scroll',
-            itemWidth: 16,
-            itemHeight: 16,
-            itemGap: 20,
+            itemWidth: 12,
+            itemHeight: 12,
+            itemGap: 16,
             textStyle: {
-                fontSize: 13,
-                color: 'rgba(148, 163, 184, 0.8)',
+                fontSize: 12,
+                color: 'hsl(220 15% 55%)',
                 padding: [0, 0, 0, 4],
             },
-            pageIconSize: 12,
+            pageIconSize: 10,
             pageTextStyle: {
-                color: 'rgba(148, 163, 184, 0.6)',
+                color: 'hsl(220 15% 40%)',
             },
         },
         series: [
@@ -141,11 +133,8 @@ const getPieOption = (
                 center: ['50%', '45%'],
                 avoidLabelOverlap: false,
                 itemStyle: {
-                    borderRadius: 6,
                     borderWidth: 2,
-                    borderColor: 'rgba(15, 23, 42, 0.8)',
-                    shadowBlur: 8,
-                    shadowColor: 'rgba(0, 0, 0, 0.3)',
+                    borderColor: 'hsl(220 15% 8%)',
                 },
                 label: {
                     show: !isSmallScreen,
@@ -169,26 +158,26 @@ const getPieOption = (
                     },
                     rich: {
                         name: {
-                            fontSize: 13,
-                            color: 'rgba(226, 232, 240, 0.9)',
-                            padding: [0, 0, 3, 0],
+                            fontSize: 12,
+                            color: 'hsl(220 15% 85%)',
+                            padding: [0, 0, 2, 0],
                             fontWeight: 500,
-                            width: 120,
+                            width: 100,
                             overflow: 'break',
                         },
                         value: {
-                            fontSize: 12,
-                            color: 'rgba(148, 163, 184, 0.8)',
-                            padding: [3, 0],
+                            fontSize: 11,
+                            color: 'hsl(220 15% 55%)',
+                            padding: [2, 0],
                             fontFamily: 'monospace',
                         },
                         per: {
-                            fontSize: 12,
-                            color: 'rgba(100, 116, 139, 0.8)',
+                            fontSize: 11,
+                            color: 'hsl(220 15% 50%)',
                             padding: [2, 0, 0, 0],
                         },
                     },
-                    lineHeight: 16,
+                    lineHeight: 14,
                 },
                 labelLayout: {
                     hideOverlap: true,
@@ -196,32 +185,26 @@ const getPieOption = (
                 },
                 labelLine: {
                     show: !isSmallScreen,
-                    length: 20,
-                    length2: 20,
+                    length: 16,
+                    length2: 16,
                     minTurnAngle: 90,
                     maxSurfaceAngle: 90,
                     smooth: true,
                 },
                 data: sortedData,
                 zlevel: 0,
-                padAngle: 2,
                 emphasis: {
                     scale: true,
-                    scaleSize: 8,
+                    scaleSize: 4,
                     focus: 'self',
                     itemStyle: {
-                        shadowBlur: 16,
-                        shadowOffsetX: 0,
-                        shadowColor: 'rgba(0, 0, 0, 0.15)',
+                        shadowBlur: 0,
                     },
                     label: {
                         show: !isSmallScreen,
                     },
                     labelLine: {
                         show: !isSmallScreen,
-                        lineStyle: {
-                            width: 2,
-                        },
                     },
                 },
                 select: {
@@ -242,16 +225,16 @@ const getPieOption = (
                               )}`
                             : `${t('common.total')}\n${total}${t('common.count')}`,
                     textAlign: 'center',
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: '500',
-                    lineHeight: 22,
-                    fill: 'rgba(148, 163, 184, 0.7)',
+                    lineHeight: 20,
+                    fill: 'hsl(220 15% 55%)',
                 },
                 zlevel: 2,
             },
         ],
         animation: true,
-        animationDuration: 500,
+        animationDuration: 300,
         universalTransition: true,
     }
 }
@@ -278,52 +261,41 @@ export default function ModelDistributionChart({
     }, [metric, models, t])
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="col-span-full bg-gradient-to-br from-card to-card/95 text-card-foreground rounded-xl border shadow-sm overflow-hidden"
-        >
-            <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-
-                <div className="relative p-6 space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-xl shrink-0">
-                                <PieChartOutlined className="text-xl text-primary" />
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="text-2xl font-semibold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent">
-                                    {t('panel.modelUsage.title')}
-                                </h3>
-                            </div>
+        <div className="col-span-full border overflow-hidden">
+            <div className="p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                        <div className="w-8 h-8 bg-muted flex items-center justify-center shrink-0">
+                            <PieChartOutlined className="text-base text-muted-foreground" />
                         </div>
-                        <div className="sm:ml-auto">
-                            <MetricToggle
-                                value={metric}
-                                onChange={onMetricChange}
-                            />
-                        </div>
+                        <h3 className="text-sm font-medium">
+                            {t('panel.modelUsage.title')}
+                        </h3>
                     </div>
-
-                    {loading ? (
-                        <div className="h-[350px] sm:h-[450px] flex items-center justify-center">
-                            <Skeleton className="w-full h-full rounded-lg" />
-                        </div>
-                    ) : (
-                        <div className="h-[350px] sm:h-[450px] transition-all duration-300">
-                            <ReactECharts
-                                option={getPieOption(models, metric, t)}
-                                style={{ height: '100%', width: '100%' }}
-                                onChartReady={(instance) =>
-                                    (chartRef.current = instance)
-                                }
-                            />
-                        </div>
-                    )}
+                    <div className="sm:ml-auto">
+                        <MetricToggle
+                            value={metric}
+                            onChange={onMetricChange}
+                        />
+                    </div>
                 </div>
+
+                {loading ? (
+                    <div className="h-[300px] sm:h-[400px] flex items-center justify-center">
+                        <Skeleton className="w-full h-full" />
+                    </div>
+                ) : (
+                    <div className="h-[300px] sm:h-[400px]">
+                        <ReactECharts
+                            option={getPieOption(models, metric, t)}
+                            style={{ height: '100%', width: '100%' }}
+                            onChartReady={(instance) =>
+                                (chartRef.current = instance)
+                            }
+                        />
+                    </div>
+                )}
             </div>
-        </motion.div>
+        </div>
     )
 }

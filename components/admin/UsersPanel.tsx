@@ -44,17 +44,16 @@ interface TFunction {
 
 const TABLE_STYLES = `
   [&_.ant-table]:!border-b-0 
-  [&_.ant-table-container]:!rounded-xl 
   [&_.ant-table-container]:!border-hidden
   [&_.ant-table-cell]:!border-border/40
-  [&_.ant-table-thead_.ant-table-cell]:!bg-muted/30
+  [&_.ant-table-thead_.ant-table-cell]:!bg-background
   [&_.ant-table-thead_.ant-table-cell]:!text-muted-foreground
   [&_.ant-table-thead_.ant-table-cell]:!font-medium
   [&_.ant-table-thead_.ant-table-cell]:!text-sm
   [&_.ant-table-thead]:!border-b
   [&_.ant-table-thead]:border-border/40
   [&_.ant-table-row]:!transition-colors
-  [&_.ant-table-row:hover>*]:!bg-muted/60
+  [&_.ant-table-row:hover>*]:!bg-muted/30
   [&_.ant-table-tbody_.ant-table-row]:!cursor-pointer
   [&_.ant-table-tbody_.ant-table-cell]:!py-4
   [&_.ant-table-row:last-child>td]:!border-b-0
@@ -64,13 +63,10 @@ const TABLE_STYLES = `
   [&_.ant-pagination]:!py-4
   [&_.ant-pagination]:!border-t
   [&_.ant-pagination]:border-border/40
-  [&_.ant-pagination-item]:!rounded-lg
   [&_.ant-pagination-item]:!border-border/40
   [&_.ant-pagination-item-active]:!bg-primary/10
   [&_.ant-pagination-item-active]:!border-primary/30
   [&_.ant-pagination-item-active>a]:!text-primary
-  [&_.ant-pagination-prev_.ant-pagination-item-link]:!rounded-lg
-  [&_.ant-pagination-next_.ant-pagination-item-link]:!rounded-lg
   [&_.ant-pagination-prev_.ant-pagination-item-link]:!border-border/40
   [&_.ant-pagination-next_.ant-pagination-item-link]:!border-border/40
 `
@@ -108,25 +104,23 @@ const UserDetailsModal = ({
                 className="w-full max-w-lg mx-auto px-4"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="bg-card rounded-2xl border border-border/50 shadow-xl overflow-hidden">
+                <div className="bg-background border border-border overflow-hidden">
                     <div className="relative px-6 pt-6">
-                        <motion.button
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="absolute right-4 top-4 p-2 rounded-full hover:bg-muted/80 transition-colors"
+                        <button
+                            className="absolute right-4 top-4 p-2 hover:bg-muted transition-colors"
                             onClick={onClose}
                         >
                             <X className="w-4 h-4 text-muted-foreground" />
-                        </motion.button>
+                        </button>
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-medium text-2xl">
+                            <div className="h-16 w-16 bg-primary/10 flex items-center justify-center text-primary font-medium text-2xl">
                                 {user.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
                                 <h3 className="text-lg font-semibold mb-1">
                                     {user.name}
                                 </h3>
-                                <span className="px-2.5 py-1 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                                <span className="px-2.5 py-1 text-xs bg-primary/10 text-primary font-medium">
                                     {user.role}
                                 </span>
                             </div>
@@ -134,18 +128,13 @@ const UserDetailsModal = ({
                     </div>
 
                     <div className="px-6 pb-6">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="space-y-6"
-                        >
+                        <div className="space-y-6">
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <div className="text-sm text-muted-foreground">
                                         {t('users.email')}
                                     </div>
-                                    <div className="p-3 bg-muted/50 rounded-lg text-sm break-all">
+                                    <div className="p-3 bg-muted text-sm break-all">
                                         {user.email}
                                     </div>
                                 </div>
@@ -153,7 +142,7 @@ const UserDetailsModal = ({
                                     <div className="text-sm text-muted-foreground">
                                         {t('users.id')}
                                     </div>
-                                    <div className="p-3 bg-muted/50 rounded-lg text-sm font-mono break-all">
+                                    <div className="p-3 bg-muted text-sm font-mono break-all">
                                         {user.id}
                                     </div>
                                 </div>
@@ -161,12 +150,12 @@ const UserDetailsModal = ({
                                     <div className="text-sm text-muted-foreground">
                                         {t('users.balance')}
                                     </div>
-                                    <div className="p-3 bg-muted/50 rounded-lg text-sm">
+                                    <div className="p-3 bg-muted text-sm">
                                         {formatBalance(user.balance)}
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     </div>
                 </div>
             </motion.div>
@@ -189,28 +178,21 @@ const BlockConfirmModal = ({
     if (!user) return null
 
     return createPortal(
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center"
+        <div
+            className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center"
             style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
             onClick={onClose}
         >
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                transition={{ type: 'spring', duration: 0.3 }}
+            <div
                 className="w-full max-w-md mx-auto px-4"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="bg-card rounded-2xl border border-border/50 shadow-xl overflow-hidden">
+                <div className="bg-background border border-border overflow-hidden">
                     <div className="p-6">
                         <div className="flex items-center gap-4 mb-6">
                             <div
                                 className={`
-                h-12 w-12 rounded-full flex items-center justify-center
+                h-12 w-12 flex items-center justify-center
                 ${
                     user.deleted
                         ? 'bg-primary/10 text-primary'
@@ -253,21 +235,17 @@ const BlockConfirmModal = ({
                         </div>
 
                         <div className="flex gap-3">
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                            <button
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 rounded-xl bg-muted/60 hover:bg-muted/80 
+                                className="flex-1 px-4 py-2 bg-muted hover:bg-muted/80 
                   text-muted-foreground font-medium transition-colors"
                             >
                                 {t('common.cancel')}
-                            </motion.button>
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+                            </button>
+                            <button
                                 onClick={onConfirm}
                                 className={`
-                  flex-1 px-4 py-2 rounded-xl font-medium text-white
+                  flex-1 px-4 py-2 font-medium text-white
                   transition-colors
                   ${
                       user.deleted
@@ -279,20 +257,20 @@ const BlockConfirmModal = ({
                                 {user.deleted
                                     ? t('users.blacklist.unblock')
                                     : t('users.blacklist.block')}
-                            </motion.button>
+                            </button>
                         </div>
                     </div>
                 </div>
-            </motion.div>
-        </motion.div>,
+            </div>
+        </div>,
         document.getElementById('modal-root') || document.body
     )
 }
 
 const LoadingState = ({ t }: { t: TFunction }) => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin mb-4" />
-        <h3 className="text-lg font-medium text-foreground/70">
+        <div className="h-8 w-8 border-2 border-primary/10 border-t-primary animate-spin mb-4" />
+        <h3 className="text-sm font-medium text-muted-foreground">
             {t('users.loading')}
         </h3>
     </div>
@@ -482,7 +460,7 @@ export default function UsersPanel() {
     const handleCreateViewerLink = async (user: User) => {
         try {
             const res = await fetch(`/api/v1/users/${user.id}/viewer-token`, {
-                method: 'POST'
+                method: 'POST',
             })
 
             const data = await res.json()
@@ -526,24 +504,21 @@ export default function UsersPanel() {
 
     const UserCard = ({ record }: { record: User }) => {
         return (
-            <div
-                className="p-4 sm:p-6 bg-card rounded-xl border border-border/40 
-        shadow-sm hover:shadow-md transition-all duration-200"
-            >
+            <div className="p-4 sm:p-6 bg-background border border-border">
                 <div className="flex items-start gap-4">
                     <div
                         className="flex-1 min-w-0 flex items-start gap-4 cursor-pointer"
                         onClick={() => setSelectedUser(record)}
                     >
-                        <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-medium text-lg shrink-0">
+                        <div className="h-12 w-12 bg-primary/10 flex items-center justify-center text-primary font-medium text-lg shrink-0">
                             {record.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-base font-semibold tracking-tight max-w-[160px] truncate">
+                                <h3 className="text-base font-medium max-w-[160px] truncate">
                                     {record.name}
                                 </h3>
-                                <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary font-medium">
                                     {record.role}
                                 </span>
                             </div>
@@ -559,7 +534,7 @@ export default function UsersPanel() {
                                 e.stopPropagation()
                                 handleCreateViewerLink(record)
                             }}
-                            className="shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                            className="shrink-0 p-2 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
                             title={t('users.viewerLink.create')}
                         >
                             <Link2 className="w-4 h-4" />
@@ -574,7 +549,6 @@ export default function UsersPanel() {
                         className={`
               shrink-0
               p-2
-              rounded-md
               transition-colors
               ${
                   record.deleted
@@ -654,7 +628,7 @@ export default function UsersPanel() {
                         className="flex items-center gap-4 cursor-pointer py-1"
                         onClick={() => setSelectedUser(record)}
                     >
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-medium">
+                        <div className="h-10 w-10 bg-primary/10 flex items-center justify-center text-primary font-medium">
                             {record.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -662,7 +636,7 @@ export default function UsersPanel() {
                                 <span className="font-medium max-w-[200px] truncate">
                                     {record.name}
                                 </span>
-                                <span className="px-2 py-0.5 text-xs rounded-full bg-primary/10 text-primary font-medium">
+                                <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary font-medium">
                                     {record.role}
                                 </span>
                             </div>
@@ -722,7 +696,7 @@ export default function UsersPanel() {
                                     e.stopPropagation()
                                     handleCreateViewerLink(record)
                                 }}
-                                className="rounded-md p-2 text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                                className="p-2 text-muted-foreground/60 transition-colors hover:bg-muted hover:text-muted-foreground"
                                 title={t('users.viewerLink.create')}
                             >
                                 <Link2 className="w-4 h-4" />
@@ -736,12 +710,11 @@ export default function UsersPanel() {
                             }}
                             className={`
               p-2
-              rounded-md
               transition-colors
               ${
                   record.deleted
-                      ? 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40'
-                      : 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40'
+                      ? 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted'
+                      : 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted'
               }
             `}
                         >
@@ -799,28 +772,7 @@ export default function UsersPanel() {
         }
 
         return (
-            <motion.div
-                initial={false}
-                animate={{
-                    boxShadow: isFocused
-                        ? '0 4px 24px rgba(0, 0, 0, 0.08)'
-                        : '0 2px 8px rgba(0, 0, 0, 0.04)',
-                }}
-                className="relative w-full rounded-2xl bg-card border border-border/40 overflow-hidden"
-            >
-                <motion.div
-                    initial={false}
-                    animate={{
-                        height: '100%',
-                        width: '3px',
-                        left: 0,
-                        opacity: isFocused ? 1 : 0,
-                    }}
-                    className="absolute top-0 bg-primary"
-                    style={{ originY: 0 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-
+            <div className="relative w-full bg-background border border-border overflow-hidden">
                 <div className="relative flex items-center">
                     <div className="absolute left-4 text-muted-foreground/60 pointer-events-none z-10">
                         <Search className="h-4 w-4" />
@@ -857,16 +809,13 @@ export default function UsersPanel() {
             "
                         allowClear={{
                             clearIcon: searchValue ? (
-                                <motion.button
-                                    initial={{ scale: 0.5, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.5, opacity: 0 }}
-                                    className="p-1.5 hover:bg-muted/80 rounded-full transition-colors z-10 
-                    bg-muted/60 text-muted-foreground/70"
+                                <button
+                                    className="p-1.5 hover:bg-muted transition-colors z-10 
+                    bg-muted text-muted-foreground"
                                     onClick={handleClear}
                                 >
                                     <X className="h-3 w-3" />
-                                </motion.button>
+                                </button>
                             ) : null,
                         }}
                     />
@@ -875,22 +824,22 @@ export default function UsersPanel() {
                         <button
                             onClick={handleSearch}
                             className="text-xs bg-primary/10 text-primary hover:bg-primary/20 
-                transition-colors px-3 py-1.5 rounded-full font-medium"
+                transition-colors px-3 py-1.5 font-medium"
                         >
                             {t('users.search')}
                         </button>
                     </div>
                 </div>
-            </motion.div>
+            </div>
         )
     }
 
     const EmptyState = ({ searchText }: { searchText: string }) => (
         <div className="flex flex-col items-center justify-center py-12 px-4">
-            <div className="h-12 w-12 rounded-full bg-muted/40 flex items-center justify-center mb-4">
-                <Search className="h-6 w-6 text-muted-foreground/50" />
+            <div className="h-12 w-12 bg-muted flex items-center justify-center mb-4">
+                <Search className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
+            <h3 className="text-base font-medium text-foreground mb-2">
                 {t('users.noResults.title')}
             </h3>
             <p className="text-sm text-muted-foreground text-center max-w-[300px]">
@@ -906,7 +855,7 @@ export default function UsersPanel() {
             <SearchBar />
 
             <div className="hidden sm:block">
-                <div className="rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden">
+                <div className="border border-border bg-background overflow-hidden">
                     {loading ? (
                         <LoadingState t={t} />
                     ) : users.filter((user) => !user.deleted).length > 0 ? (
@@ -994,7 +943,7 @@ export default function UsersPanel() {
                 {showBlacklist && (
                     <div className="space-y-4">
                         <div className="hidden sm:block">
-                            <div className="rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden">
+                            <div className="border border-border bg-background overflow-hidden">
                                 {loading ? (
                                     <LoadingState t={t} />
                                 ) : blacklistUsers.length > 0 ? (

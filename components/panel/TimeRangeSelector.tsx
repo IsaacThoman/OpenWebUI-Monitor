@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import dayjs from '@/lib/dayjs'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from 'react-i18next'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
     Calendar as CalendarIcon,
     Clock,
@@ -186,175 +185,147 @@ export default function TimeRangeSelector({
     }
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 text-lg font-medium">
-                <Clock className="w-5 h-5 text-primary" />
+        <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+                <Clock className="w-4 h-4 text-muted-foreground" />
                 <h3>{t('panel.timeRange.title')}</h3>
             </div>
 
             <div className="space-y-4">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                     {timeOptions.map(({ id, type, label, icon: Icon }) => (
-                        <motion.div
+                        <Button
                             key={id}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            variant={
+                                timeRangeType === type ? 'default' : 'outline'
+                            }
+                            className="w-full h-full min-h-[44px] flex flex-col gap-1 items-center justify-center"
+                            onClick={() => handleTimeOptionClick(type)}
                         >
-                            <Button
-                                variant={
-                                    timeRangeType === type
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                className="w-full h-full min-h-[52px] flex flex-col gap-1.5 items-center justify-center"
-                                onClick={() => handleTimeOptionClick(type)}
-                            >
-                                <Icon className="w-4 h-4" />
-                                <span className="text-sm">{label}</span>
-                            </Button>
-                        </motion.div>
+                            <Icon className="w-4 h-4" />
+                            <span className="text-xs">{label}</span>
+                        </Button>
                     ))}
 
-                    <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                    <Button
+                        variant={
+                            timeRangeType === 'custom' ? 'default' : 'outline'
+                        }
+                        className="w-full h-full min-h-[44px] flex flex-col gap-1 items-center justify-center"
+                        onClick={handleCustomButtonClick}
                     >
-                        <Button
-                            variant={
-                                timeRangeType === 'custom'
-                                    ? 'default'
-                                    : 'outline'
-                            }
-                            className="w-full h-full min-h-[52px] flex flex-col gap-1.5 items-center justify-center"
-                            onClick={handleCustomButtonClick}
-                        >
-                            <CalendarIcon className="w-4 h-4" />
-                            <span className="text-sm">
-                                {t('panel.timeRange.timeOptions.custom')}
-                            </span>
-                        </Button>
-                    </motion.div>
+                        <CalendarIcon className="w-4 h-4" />
+                        <span className="text-xs">
+                            {t('panel.timeRange.timeOptions.custom')}
+                        </span>
+                    </Button>
                 </div>
 
-                <AnimatePresence>
-                    {isCustomOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="space-y-3"
-                        >
-                            <div className="text-sm text-muted-foreground">
-                                {t('panel.timeRange.customRange')}
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <Popover
-                                    open={startOpen}
-                                    onOpenChange={setStartOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="secondary"
-                                            className={cn(
-                                                'justify-start text-left font-normal w-full sm:w-[240px]',
-                                                !startDate &&
-                                                    'text-muted-foreground'
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {formatDate(startDate)}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
+                {isCustomOpen && (
+                    <div className="space-y-3 border p-3">
+                        <div className="text-xs text-muted-foreground">
+                            {t('panel.timeRange.customRange')}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Popover
+                                open={startOpen}
+                                onOpenChange={setStartOpen}
+                            >
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            'justify-start text-left font-normal w-full sm:w-[200px]',
+                                            !startDate &&
+                                                'text-muted-foreground'
+                                        )}
                                     >
-                                        <Calendar
-                                            mode="single"
-                                            selected={startDate}
-                                            defaultMonth={startDate}
-                                            onSelect={(date) => {
-                                                if (date) {
-                                                    handleDateChange(
-                                                        date,
-                                                        endDate
-                                                    )
-                                                    setStartOpen(false)
-                                                }
-                                            }}
-                                            disabled={(date) =>
-                                                endDate
-                                                    ? dayjs(date).isAfter(
-                                                          endDate,
-                                                          'day'
-                                                      )
-                                                    : false
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {formatDate(startDate)}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto p-0"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={startDate}
+                                        defaultMonth={startDate}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                handleDateChange(date, endDate)
+                                                setStartOpen(false)
                                             }
-                                            initialFocus
-                                            locale={
-                                                i18n.language === 'zh'
-                                                    ? zhCN
-                                                    : undefined
-                                            }
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                        }}
+                                        disabled={(date) =>
+                                            endDate
+                                                ? dayjs(date).isAfter(
+                                                      endDate,
+                                                      'day'
+                                                  )
+                                                : false
+                                        }
+                                        initialFocus
+                                        locale={
+                                            i18n.language === 'zh'
+                                                ? zhCN
+                                                : undefined
+                                        }
+                                    />
+                                </PopoverContent>
+                            </Popover>
 
-                                <Popover
-                                    open={endOpen}
-                                    onOpenChange={setEndOpen}
-                                >
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="secondary"
-                                            className={cn(
-                                                'justify-start text-left font-normal w-full sm:w-[240px]',
-                                                !endDate &&
-                                                    'text-muted-foreground'
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {formatDate(endDate)}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent
-                                        className="w-auto p-0"
-                                        align="start"
+                            <Popover open={endOpen} onOpenChange={setEndOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            'justify-start text-left font-normal w-full sm:w-[200px]',
+                                            !endDate && 'text-muted-foreground'
+                                        )}
                                     >
-                                        <Calendar
-                                            mode="single"
-                                            selected={endDate}
-                                            defaultMonth={endDate}
-                                            onSelect={(date) => {
-                                                if (date) {
-                                                    handleDateChange(
-                                                        startDate,
-                                                        date
-                                                    )
-                                                    setEndOpen(false)
-                                                }
-                                            }}
-                                            disabled={(date) =>
-                                                startDate
-                                                    ? dayjs(date).isBefore(
-                                                          startDate,
-                                                          'day'
-                                                      )
-                                                    : false
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {formatDate(endDate)}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                    className="w-auto p-0"
+                                    align="start"
+                                >
+                                    <Calendar
+                                        mode="single"
+                                        selected={endDate}
+                                        defaultMonth={endDate}
+                                        onSelect={(date) => {
+                                            if (date) {
+                                                handleDateChange(
+                                                    startDate,
+                                                    date
+                                                )
+                                                setEndOpen(false)
                                             }
-                                            initialFocus
-                                            locale={
-                                                i18n.language === 'zh'
-                                                    ? zhCN
-                                                    : undefined
-                                            }
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                                        }}
+                                        disabled={(date) =>
+                                            startDate
+                                                ? dayjs(date).isBefore(
+                                                      startDate,
+                                                      'day'
+                                                  )
+                                                : false
+                                        }
+                                        initialFocus
+                                        locale={
+                                            i18n.language === 'zh'
+                                                ? zhCN
+                                                : undefined
+                                        }
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )

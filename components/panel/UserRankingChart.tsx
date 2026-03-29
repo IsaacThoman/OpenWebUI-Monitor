@@ -1,14 +1,12 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { Spin, Skeleton } from 'antd'
+import { Skeleton } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { ECharts } from 'echarts'
 import { MetricToggle } from '@/components/ui/metric-toggle'
 import { useTranslation } from 'react-i18next'
 import { BarChartOutlined } from '@ant-design/icons'
-import { Card as ShadcnCard } from '@/components/ui/card'
-import { motion } from 'framer-motion'
 
 interface UserUsage {
     nickname: string
@@ -58,8 +56,8 @@ const getBarOption = (
             ),
             axisLabel: {
                 inside: false,
-                color: 'rgba(148, 163, 184, 0.8)',
-                fontSize: 12,
+                color: 'hsl(220 15% 55%)',
+                fontSize: 11,
                 rotate: 35,
                 interval: 0,
                 hideOverlap: true,
@@ -74,7 +72,7 @@ const getBarOption = (
             axisLine: {
                 show: true,
                 lineStyle: {
-                    color: 'rgba(51, 65, 85, 0.6)',
+                    color: 'hsl(220 15% 18%)',
                     width: 1,
                 },
             },
@@ -84,33 +82,33 @@ const getBarOption = (
             type: 'value',
             name: '',
             nameTextStyle: {
-                color: 'rgba(148, 163, 184, 0.6)',
-                fontSize: 13,
+                color: 'hsl(220 15% 55%)',
+                fontSize: 12,
                 padding: [0, 0, 0, 0],
             },
             axisLine: {
                 show: true,
                 lineStyle: {
-                    color: 'rgba(51, 65, 85, 0.6)',
+                    color: 'hsl(220 15% 18%)',
                     width: 1,
                 },
             },
             axisTick: {
                 show: true,
                 lineStyle: {
-                    color: 'rgba(51, 65, 85, 0.6)',
+                    color: 'hsl(220 15% 18%)',
                 },
             },
             splitLine: {
                 show: true,
                 lineStyle: {
-                    color: 'rgba(51, 65, 85, 0.3)',
+                    color: 'hsl(220 15% 18%)',
                     width: 1,
                 },
             },
             axisLabel: {
-                color: 'rgba(148, 163, 184, 0.7)',
-                fontSize: 12,
+                color: 'hsl(220 15% 55%)',
+                fontSize: 11,
                 formatter: (value: number) => {
                     if (metric === 'cost') {
                         return `${t('common.currency')}${value.toFixed(1)}`
@@ -135,54 +133,18 @@ const getBarOption = (
             {
                 type: 'bar',
                 itemStyle: {
-                    color: {
-                        type: 'linear',
-                        x: 0,
-                        y: 0,
-                        x2: 0,
-                        y2: 1,
-                        colorStops: [
-                            {
-                                offset: 0,
-                                color: 'rgba(99, 133, 255, 0.85)',
-                            },
-                            {
-                                offset: 1,
-                                color: 'rgba(99, 133, 255, 0.4)',
-                            },
-                        ],
-                    },
-                    borderRadius: [8, 8, 0, 0],
+                    color: 'hsl(220 15% 35%)',
                 },
                 emphasis: {
                     itemStyle: {
-                        color: {
-                            type: 'linear',
-                            x: 0,
-                            y: 0,
-                            x2: 0,
-                            y2: 1,
-                            colorStops: [
-                                {
-                                    offset: 0,
-                                    color: 'rgba(99, 133, 255, 0.95)',
-                                },
-                                {
-                                    offset: 1,
-                                    color: 'rgba(99, 133, 255, 0.5)',
-                                },
-                            ],
-                        },
-                        shadowBlur: 10,
-                        shadowColor: 'rgba(99, 133, 255, 0.2)',
+                        color: 'hsl(220 15% 45%)',
                     },
                 },
                 barWidth: '35%',
                 data: columnData.map((item) => item.value),
                 showBackground: true,
                 backgroundStyle: {
-                    color: 'rgba(99, 133, 255, 0.05)',
-                    borderRadius: [8, 8, 0, 0],
+                    color: 'hsl(220 15% 12%)',
                 },
                 label: {
                     show: !isSmallScreen,
@@ -192,16 +154,15 @@ const getBarOption = (
                             ? `${params.value.toFixed(2)}`
                             : `${params.value}`
                     },
-                    fontSize: 11,
-                    color: 'rgba(148, 163, 184, 0.8)',
+                    fontSize: 10,
+                    color: 'hsl(220 15% 55%)',
                     distance: 2,
                     fontFamily: 'monospace',
                 },
             },
         ],
         animation: true,
-        animationDuration: 800,
-        animationEasing: 'cubicOut' as const,
+        animationDuration: 300,
     }
 }
 
@@ -261,51 +222,40 @@ export default function UserRankingChart({
     }
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="col-span-full bg-gradient-to-br from-card to-card/95 text-card-foreground rounded-xl border shadow-sm overflow-hidden"
-        >
-            <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-
-                <div className="relative p-6 space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                            <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-xl shrink-0">
-                                <BarChartOutlined className="text-xl text-primary" />
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="text-2xl font-semibold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent">
-                                    {t('panel.userUsageChart.title')}
-                                </h3>
-                            </div>
+        <div className="col-span-full border overflow-hidden">
+            <div className="p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1">
+                        <div className="w-8 h-8 bg-muted flex items-center justify-center shrink-0">
+                            <BarChartOutlined className="text-base text-muted-foreground" />
                         </div>
-                        <div className="sm:ml-auto">
-                            <MetricToggle
-                                value={metric}
-                                onChange={onMetricChange}
-                            />
-                        </div>
+                        <h3 className="text-sm font-medium">
+                            {t('panel.userUsageChart.title')}
+                        </h3>
                     </div>
-
-                    {loading ? (
-                        <div className="h-[350px] sm:h-[450px] flex items-center justify-center">
-                            <Skeleton className="w-full h-full rounded-lg" />
-                        </div>
-                    ) : (
-                        <div className="h-[350px] sm:h-[450px] transition-all duration-300">
-                            <ReactECharts
-                                option={getBarOption(users, metric, t)}
-                                style={{ height: '100%', width: '100%' }}
-                                onChartReady={onChartReady}
-                                className="bar-chart"
-                            />
-                        </div>
-                    )}
+                    <div className="sm:ml-auto">
+                        <MetricToggle
+                            value={metric}
+                            onChange={onMetricChange}
+                        />
+                    </div>
                 </div>
+
+                {loading ? (
+                    <div className="h-[300px] sm:h-[400px] flex items-center justify-center">
+                        <Skeleton className="w-full h-full" />
+                    </div>
+                ) : (
+                    <div className="h-[300px] sm:h-[400px]">
+                        <ReactECharts
+                            option={getBarOption(users, metric, t)}
+                            style={{ height: '100%', width: '100%' }}
+                            onChartReady={onChartReady}
+                            className="bar-chart"
+                        />
+                    </div>
+                )}
             </div>
-        </motion.div>
+        </div>
     )
 }

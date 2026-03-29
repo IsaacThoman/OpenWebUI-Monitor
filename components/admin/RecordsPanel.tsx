@@ -1,20 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Table, DatePicker, Space } from 'antd'
+import { Table, DatePicker } from 'antd'
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table'
 import type { FilterValue, SorterResult } from 'antd/es/table/interface'
-import {
-    DownloadOutlined,
-    CalendarOutlined,
-    TableOutlined,
-} from '@ant-design/icons'
+import { DownloadOutlined, CalendarOutlined } from '@ant-design/icons'
 import type { RangePickerProps } from 'antd/es/date-picker'
 import zhCN from 'antd/lib/locale/zh_CN'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
@@ -248,17 +243,16 @@ export default function RecordsPanel() {
 
     const tableClassName = `
     [&_.ant-table]:!border-b-0 
-    [&_.ant-table-container]:!rounded-xl 
     [&_.ant-table-container]:!border-hidden
     [&_.ant-table-cell]:!border-border/40
-    [&_.ant-table-thead_.ant-table-cell]:!bg-muted/30
+    [&_.ant-table-thead_.ant-table-cell]:!bg-background
     [&_.ant-table-thead_.ant-table-cell]:!text-muted-foreground
     [&_.ant-table-thead_.ant-table-cell]:!font-medium
     [&_.ant-table-thead_.ant-table-cell]:!text-sm
     [&_.ant-table-thead]:!border-b
     [&_.ant-table-thead]:border-border/40
     [&_.ant-table-row]:!transition-colors
-    [&_.ant-table-row:hover>*]:!bg-muted/60
+    [&_.ant-table-row:hover>*]:!bg-muted/30
     [&_.ant-table-tbody_.ant-table-row]:!cursor-pointer
     [&_.ant-table-tbody_.ant-table-cell]:!py-4
     [&_.ant-table-row:last-child>td]:!border-b-0
@@ -268,68 +262,62 @@ export default function RecordsPanel() {
 
     return (
         <div className="space-y-6">
-            <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                >
-                    <Card className="p-6">
-                        <div className="space-y-6">
-                            <div className="flex flex-col sm:flex-row justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                    <CalendarOutlined className="text-primary" />
-                                    <span className="font-medium">
-                                        {t('records.dateRange')}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <RangePicker
-                                        locale={zhCN.DatePicker}
-                                        className="!w-full sm:!w-auto"
-                                        onChange={(dates) => {
-                                            const newParams = {
-                                                ...tableParams,
-                                                dateRange: dates,
-                                                pagination: {
-                                                    ...tableParams.pagination,
-                                                    current: 1,
-                                                },
-                                            }
-                                            setTableParams(newParams)
-                                            fetchRecords(newParams)
-                                        }}
-                                    />
-                                    <Button
-                                        variant="outline"
-                                        className="flex items-center gap-2"
-                                        onClick={handleExport}
-                                    >
-                                        <DownloadOutlined />
-                                        {t('records.export')}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <div className="overflow-x-auto">
-                                <Table
-                                    columns={columns}
-                                    dataSource={records}
-                                    rowKey="id"
-                                    pagination={{
-                                        ...tableParams.pagination,
-                                        className: '!justify-end',
-                                        showTotal: (total) =>
-                                            `${t('common.total')} ${total} ${t('common.count')}`,
-                                    }}
-                                    loading={loading}
-                                    onChange={handleTableChange}
-                                    className={tableClassName}
-                                    scroll={{ x: 800 }}
-                                />
-                            </div>
+            <Card className="p-4">
+                <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <CalendarOutlined className="text-primary" />
+                            <span className="font-medium text-sm">
+                                {t('records.dateRange')}
+                            </span>
                         </div>
-                    </Card>
-            </motion.div>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <RangePicker
+                                locale={zhCN.DatePicker}
+                                className="!w-full sm:!w-auto"
+                                onChange={(dates) => {
+                                    const newParams = {
+                                        ...tableParams,
+                                        dateRange: dates,
+                                        pagination: {
+                                            ...tableParams.pagination,
+                                            current: 1,
+                                        },
+                                    }
+                                    setTableParams(newParams)
+                                    fetchRecords(newParams)
+                                }}
+                            />
+                            <Button
+                                variant="outline"
+                                className="flex items-center gap-2"
+                                onClick={handleExport}
+                            >
+                                <DownloadOutlined />
+                                {t('records.export')}
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <Table
+                            columns={columns}
+                            dataSource={records}
+                            rowKey="id"
+                            pagination={{
+                                ...tableParams.pagination,
+                                className: '!justify-end',
+                                showTotal: (total) =>
+                                    `${t('common.total')} ${total} ${t('common.count')}`,
+                            }}
+                            loading={loading}
+                            onChange={handleTableChange}
+                            className={tableClassName}
+                            scroll={{ x: 800 }}
+                        />
+                    </div>
+                </div>
+            </Card>
         </div>
     )
 }

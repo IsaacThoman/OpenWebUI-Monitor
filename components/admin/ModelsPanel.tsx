@@ -115,7 +115,7 @@ const TestProgressPanel = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="rounded-xl bg-card border shadow-sm overflow-hidden"
+                    className="bg-background border overflow-hidden"
                 >
                     <div className="p-6 space-y-6">
                         <div
@@ -219,7 +219,7 @@ const TestProgressPanel = ({
                                                         y: 0,
                                                     },
                                                 }}
-                                                className="flex items-center gap-2 p-2 rounded-lg bg-muted/50"
+                                                className="flex items-center gap-2 p-2 bg-muted/30"
                                             >
                                                 <Image
                                                     src={model.imageUrl}
@@ -251,8 +251,8 @@ const TestProgressPanel = ({
 
 const LoadingState = ({ t }: { t: (key: string) => string }) => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="h-12 w-12 rounded-full border-4 border-primary/10 border-t-primary animate-spin mb-4" />
-        <h3 className="text-lg font-medium text-foreground/70">
+        <div className="h-8 w-8 border-2 border-primary/10 border-t-primary animate-spin mb-4" />
+        <h3 className="text-sm font-medium text-muted-foreground">
             {t('models.loading')}
         </h3>
     </div>
@@ -828,17 +828,16 @@ export default function ModelsPanel() {
 
     const tableClassName = `
     [&_.ant-table]:!border-b-0 
-    [&_.ant-table-container]:!rounded-xl 
     [&_.ant-table-container]:!border-hidden
     [&_.ant-table-cell]:!border-border/40
-    [&_.ant-table-thead_.ant-table-cell]:!bg-muted/30
+    [&_.ant-table-thead_.ant-table-cell]:!bg-background
     [&_.ant-table-thead_.ant-table-cell]:!text-muted-foreground
     [&_.ant-table-thead_.ant-table-cell]:!font-medium
     [&_.ant-table-thead_.ant-table-cell]:!text-sm
     [&_.ant-table-thead]:!border-b
     [&_.ant-table-thead]:border-border/40
     [&_.ant-table-row]:!transition-colors
-    [&_.ant-table-row:hover>*]:!bg-muted/60
+    [&_.ant-table-row:hover>*]:!bg-muted/30
     [&_.ant-table-tbody_.ant-table-row]:!cursor-pointer
     [&_.ant-table-tbody_.ant-table-cell]:!py-4
     [&_.ant-table-row:last-child>td]:!border-b-0
@@ -850,10 +849,7 @@ export default function ModelsPanel() {
         const isPerMsgEnabled = record.per_msg_price >= 0
 
         return (
-            <div
-                className="p-4 sm:p-6 bg-card rounded-xl border border-border/40 
-        shadow-sm hover:shadow-md transition-all duration-200 space-y-4"
-            >
+            <div className="p-4 sm:p-6 bg-background border border-border space-y-4">
                 <div className="flex items-center gap-3">
                     <div
                         className="relative cursor-pointer group shrink-0"
@@ -866,10 +862,9 @@ export default function ModelsPanel() {
                                     alt={record.name}
                                     width={40}
                                     height={40}
-                                    className="rounded-xl object-cover transition-transform group-hover:scale-105"
+                                    className="object-cover"
                                 />
                             )}
-                            <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-black/5"></div>
                         </div>
                         {record.testStatus && (
                             <div className="absolute -top-1 -right-1 z-10">
@@ -880,10 +875,10 @@ export default function ModelsPanel() {
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-semibold tracking-tight truncate">
+                        <h3 className="text-sm font-medium truncate">
                             {record.name}
                         </h3>
-                        <p className="text-xs text-muted-foreground/80 truncate font-mono">
+                        <p className="text-xs text-muted-foreground truncate font-mono">
                             {record.id}
                         </p>
                     </div>
@@ -915,7 +910,7 @@ export default function ModelsPanel() {
                             key={index}
                             className={`space-y-1.5 ${item.type === 'switch' ? '' : item.disabled ? 'opacity-50' : ''}`}
                         >
-                            <span className="text-xs text-muted-foreground/80 block truncate">
+                            <span className="text-xs text-muted-foreground block truncate">
                                 {item.label}
                             </span>
                             {item.type === 'switch' ? (
@@ -1008,7 +1003,7 @@ export default function ModelsPanel() {
                     variant="default"
                     size="default"
                     onClick={handleTestModels}
-                    className="relative flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                    className="relative flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white"
                     disabled={testing && !isTestComplete}
                 >
                     <motion.div
@@ -1031,7 +1026,7 @@ export default function ModelsPanel() {
                     variant="default"
                     size="default"
                     onClick={handleSyncAllDerivedModels}
-                    className="relative flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                    className="relative flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white"
                     disabled={syncing}
                 >
                     <motion.div
@@ -1069,7 +1064,7 @@ export default function ModelsPanel() {
                     variant="outline"
                     size="default"
                     onClick={handleExportPrices}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2"
                 >
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -1091,7 +1086,7 @@ export default function ModelsPanel() {
                 <Button
                     variant="outline"
                     size="default"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="flex items-center gap-2 px-4 py-2"
                     onClick={() =>
                         document.getElementById('import-input')?.click()
                     }
@@ -1135,7 +1130,7 @@ export default function ModelsPanel() {
             />
 
             <div className="hidden sm:block">
-                <div className="rounded-xl border border-border/40 bg-card shadow-sm overflow-hidden">
+                <div className="border border-border bg-background overflow-hidden">
                     {loading ? (
                         <LoadingState t={t} />
                     ) : (
