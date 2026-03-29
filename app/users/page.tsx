@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Trash2, Search, X, Unlock, Lock, Link2 } from 'lucide-react'
 import { EditableCell } from '@/components/editable-cell'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { toast, Toaster } from 'sonner'
@@ -513,7 +514,7 @@ export default function UsersPage() {
                 throw new Error(data.error || t('users.viewerLink.createError'))
             }
 
-            await navigator.clipboard.writeText(data.data.url)
+            await copyTextToClipboard(data.data.url)
             toast.success(
                 user.has_viewer_token
                     ? t('users.viewerLink.resetSuccess')
@@ -538,7 +539,9 @@ export default function UsersPage() {
             console.error('Failed to create viewer link:', error)
             toast.error(
                 error instanceof Error
-                    ? error.message
+                    ? error.message === 'Clipboard is not available'
+                        ? t('users.viewerLink.copyError')
+                        : error.message
                     : t('users.viewerLink.createError')
             )
         }

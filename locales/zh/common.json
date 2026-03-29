@@ -47,6 +47,7 @@
             "unauthorized": "未授权，请重新登录",
             "apiKeyNotSet": "API 密钥未设置或加载失败",
             "apiKeyCopied": "API 密钥已复制到剪贴板",
+            "copyFailed": "复制到剪贴板失败",
             "updateCheckFailed": "检查更新失败",
             "latestVersion": "当前已是最新版本",
             "getVersionFailed": "获取版本号失败"
@@ -203,7 +204,8 @@
             "create": "创建统计链接",
             "createSuccess": "统计链接已复制到剪贴板",
             "resetSuccess": "新的统计链接已复制，旧链接已失效",
-            "createError": "创建统计链接失败"
+            "createError": "创建统计链接失败",
+            "copyError": "统计链接已创建，但复制失败"
         }
     },
 
@@ -370,7 +372,8 @@
             "copyUrl": {
                 "label": "复制登录链接",
                 "copied": "已复制!",
-                "success": "登录链接已复制到剪贴板"
+                "success": "登录链接已复制到剪贴板",
+                "error": "复制登录链接失败"
             },
             "cards": {
                 "balance": "当前余额",

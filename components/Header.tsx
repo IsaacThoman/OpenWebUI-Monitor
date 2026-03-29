@@ -17,6 +17,7 @@ import {
     ChevronDown,
 } from 'lucide-react'
 import DatabaseBackup from './DatabaseBackup'
+import { copyTextToClipboard } from '@/lib/clipboard'
 import { APP_VERSION } from '@/lib/version'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -144,14 +145,20 @@ export default function Header() {
         )
     }
 
-    const handleCopyApiKey = () => {
+    const handleCopyApiKey = async () => {
         const token = localStorage.getItem('access_token')
         if (!token) {
             toast.error(t('header.messages.unauthorized'))
             return
         }
-        navigator.clipboard.writeText(apiKey)
-        toast.success(t('header.messages.apiKeyCopied'))
+
+        try {
+            await copyTextToClipboard(apiKey)
+            toast.success(t('header.messages.apiKeyCopied'))
+        } catch (error) {
+            console.error('Failed to copy API key:', error)
+            toast.error(t('header.messages.copyFailed'))
+        }
     }
 
     const handleLogout = () => {

@@ -47,6 +47,7 @@
             "unauthorized": "No autorizado, por favor inicie sesión nuevamente",
             "apiKeyNotSet": "Clave API no establecida o no se pudo cargar",
             "apiKeyCopied": "Clave API copiada al portapapeles",
+            "copyFailed": "Error al copiar al portapapeles",
             "updateCheckFailed": "Error al buscar actualizaciones",
             "latestVersion": "La versión actual está actualizada",
             "getVersionFailed": "Error al obtener el número de versión"
@@ -204,7 +205,8 @@
             "create": "Crear enlace de estadísticas",
             "createSuccess": "Enlace de estadísticas copiado al portapapeles",
             "resetSuccess": "Nuevo enlace copiado. El enlace anterior fue reemplazado",
-            "createError": "Error al crear el enlace de estadísticas"
+            "createError": "Error al crear el enlace de estadísticas",
+            "copyError": "El enlace se creó, pero no se pudo copiar"
         }
     },
 
@@ -371,7 +373,8 @@
             "copyUrl": {
                 "label": "Copiar URL de inicio de sesión",
                 "copied": "¡Copiado!",
-                "success": "URL de inicio de sesión copiada al portapapeles"
+                "success": "URL de inicio de sesión copiada al portapapeles",
+                "error": "Error al copiar la URL de inicio de sesión"
             },
             "cards": {
                 "balance": "Saldo actual",

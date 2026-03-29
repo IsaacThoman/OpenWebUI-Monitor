@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/button'
+import { copyTextToClipboard } from '@/lib/clipboard'
 
 interface UserPortalResponse {
     success: boolean
@@ -147,14 +148,19 @@ export default function AccountPage() {
         }
     }
 
-    const handleCopyLoginUrl = () => {
+    const handleCopyLoginUrl = async () => {
         if (!data?.profile.viewerToken) return
 
-        const loginUrl = `${window.location.origin}/u/${data.profile.viewerToken}`
-        navigator.clipboard.writeText(loginUrl)
-        setCopied(true)
-        toast.success(t('userPortal.account.copyUrl.success'))
-        setTimeout(() => setCopied(false), 2000)
+        try {
+            const loginUrl = `${window.location.origin}/u/${data.profile.viewerToken}`
+            await copyTextToClipboard(loginUrl)
+            setCopied(true)
+            toast.success(t('userPortal.account.copyUrl.success'))
+            setTimeout(() => setCopied(false), 2000)
+        } catch (error) {
+            console.error('Failed to copy login URL:', error)
+            toast.error(t('userPortal.account.copyUrl.error'))
+        }
     }
 
     if (loading) {

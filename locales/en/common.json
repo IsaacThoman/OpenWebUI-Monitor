@@ -47,6 +47,7 @@
             "unauthorized": "Unauthorized, please login again",
             "apiKeyNotSet": "API key not set or failed to load",
             "apiKeyCopied": "API key copied to clipboard",
+            "copyFailed": "Failed to copy to clipboard",
             "updateCheckFailed": "Failed to check for updates",
             "latestVersion": "Current version is up to date",
             "getVersionFailed": "Failed to get version number"
@@ -203,7 +204,8 @@
             "create": "Create stats link",
             "createSuccess": "Stats link copied to clipboard",
             "resetSuccess": "New stats link copied. Previous link was replaced",
-            "createError": "Failed to create stats link"
+            "createError": "Failed to create stats link",
+            "copyError": "Stats link was created, but copying it failed"
         }
     },
 
@@ -368,7 +370,8 @@
             "copyUrl": {
                 "label": "Copy login URL",
                 "copied": "Copied!",
-                "success": "Login URL copied to clipboard"
+                "success": "Login URL copied to clipboard",
+                "error": "Failed to copy login URL"
             },
             "cards": {
                 "balance": "Current balance",
