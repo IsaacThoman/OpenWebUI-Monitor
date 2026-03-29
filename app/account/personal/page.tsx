@@ -75,6 +75,43 @@ function formatDate(value: string | null, fallback: string): string {
     return new Date(value).toLocaleString()
 }
 
+function getSelectedPeriodDayCount(
+    range: TimeRange,
+    firstUseTime: string | null
+): number {
+    switch (range) {
+        case '24h':
+            return 1
+        case '7d':
+            return 7
+        case '30d':
+            return 30
+        case '90d':
+            return 90
+        case 'all': {
+            if (!firstUseTime) {
+                return 0
+            }
+
+            const start = new Date(firstUseTime)
+            const today = new Date()
+            const startOfFirstDay = new Date(
+                start.getFullYear(),
+                start.getMonth(),
+                start.getDate()
+            )
+            const startOfToday = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                today.getDate()
+            )
+            const diffMs = startOfToday.getTime() - startOfFirstDay.getTime()
+
+            return Math.max(1, Math.floor(diffMs / 86400000) + 1)
+        }
+    }
+}
+
 function getPaginationItems(
     currentPage: number,
     totalPages: number
@@ -269,6 +306,10 @@ export default function PersonalPage() {
         recentRecordsPage,
         recentRecordsTotalPages
     )
+    const selectedPeriodDayCount = getSelectedPeriodDayCount(
+        timeRange,
+        data?.overview.firstUseTime ?? null
+    )
     const recentRecordsStart =
         recentRecordsTotal === 0
             ? 0
@@ -408,6 +449,7 @@ export default function PersonalPage() {
                 <DailyUsageChart
                     loading={statsLoading}
                     data={dailyUsage}
+                    periodDayCount={selectedPeriodDayCount}
                     metric={dailyUsageMetric}
                     onMetricChange={setDailyUsageMetric}
                 />

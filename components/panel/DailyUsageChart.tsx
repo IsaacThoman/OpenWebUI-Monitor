@@ -30,6 +30,7 @@ interface DailyUsage {
 interface DailyUsageChartProps {
     loading: boolean
     data: DailyUsage[]
+    periodDayCount: number
     metric: 'cost' | 'tokens' | 'calls'
     onMetricChange: (metric: 'cost' | 'tokens' | 'calls') => void
 }
@@ -360,6 +361,7 @@ const getBarOption = (
 export default function DailyUsageChart({
     loading,
     data,
+    periodDayCount,
     metric,
     onMetricChange,
 }: DailyUsageChartProps) {
@@ -399,7 +401,7 @@ export default function DailyUsageChart({
     }, [data, metric])
 
     const averageStats = useMemo(() => {
-        if (data.length === 0) {
+        if (data.length === 0 || periodDayCount <= 0) {
             return {
                 averageSpend: 0,
                 averageTokens: 0,
@@ -407,7 +409,6 @@ export default function DailyUsageChart({
             }
         }
 
-        const dayCount = data.length
         const totals = data.reduce(
             (acc, day) => {
                 acc.cost += day.totalCost
@@ -419,11 +420,11 @@ export default function DailyUsageChart({
         )
 
         return {
-            averageSpend: totals.cost / dayCount,
-            averageTokens: totals.tokens / dayCount,
-            averageCalls: totals.calls / dayCount,
+            averageSpend: totals.cost / periodDayCount,
+            averageTokens: totals.tokens / periodDayCount,
+            averageCalls: totals.calls / periodDayCount,
         }
-    }, [data])
+    }, [data, periodDayCount])
 
     const title = getMetricTitle(metric)
 
