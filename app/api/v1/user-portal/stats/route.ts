@@ -19,6 +19,8 @@ export async function GET(request: Request) {
         // Get days parameter from URL
         const { searchParams } = new URL(request.url)
         const days = searchParams.get('days')
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
 
         let daysNum: number | undefined
         if (days) {
@@ -31,7 +33,26 @@ export async function GET(request: Request) {
             }
         }
 
-        const stats = await getUserPortalStatsForTimeRange(user.id, daysNum)
+        if (isNaN(page) || page < 1) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid page parameter' },
+                { status: 400 }
+            )
+        }
+
+        if (isNaN(pageSize) || pageSize < 1) {
+            return NextResponse.json(
+                { success: false, error: 'Invalid pageSize parameter' },
+                { status: 400 }
+            )
+        }
+
+        const stats = await getUserPortalStatsForTimeRange(
+            user.id,
+            daysNum,
+            page,
+            pageSize
+        )
 
         return NextResponse.json({ success: true, data: stats })
     } catch (error) {

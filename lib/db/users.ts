@@ -533,7 +533,9 @@ export async function getUserPortalStats(
 
 export async function getUserPortalStatsForTimeRange(
     userId: string,
-    days?: number
+    days?: number,
+    page = 1,
+    pageSize = 10
 ): Promise<{
     totalCalls: number
     totalTokens: number
@@ -552,16 +554,26 @@ export async function getUserPortalStatsForTimeRange(
         cost: number
         balanceAfter: number
     }>
+    recentRecordsPagination: {
+        page: number
+        pageSize: number
+        total: number
+        totalPages: number
+    }
 }> {
     await ensureUserTableExists()
 
     const timeCondition = days
         ? `AND u.use_time >= NOW() - INTERVAL '${days} days'`
         : ''
+    const safePage = Math.max(1, Math.floor(page))
+    const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100)
+    const offset = (safePage - 1) * safePageSize
 
-    const [statsResult, topModelsResult, recordsResult] = await Promise.all([
-        query(
-            `
+    const [statsResult, topModelsResult, recordsCountResult, recordsResult] =
+        await Promise.all([
+            query(
+                `
           SELECT
             COALESCE(SUM(cost), 0) AS total_cost,
             COUNT(*) AS total_calls,
@@ -570,10 +582,10 @@ export async function getUserPortalStatsForTimeRange(
           WHERE user_id = $1
           ${timeCondition.replace(/u\./g, '')}
         `,
-            [userId]
-        ),
-        query(
-            `
+                [userId]
+            ),
+            query(
+                `
           SELECT
             u.model_name,
             COALESCE(mp.name, u.model_name) as display_name,
@@ -587,10 +599,19 @@ export async function getUserPortalStatsForTimeRange(
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
-            [userId]
-        ),
-        query(
-            `
+                [userId]
+            ),
+            query(
+                `
+          SELECT COUNT(*) AS total
+          FROM user_usage_records u
+          WHERE u.user_id = $1
+          ${timeCondition}
+        `,
+                [userId]
+            ),
+            query(
+                `
           SELECT
             u.id,
             u.use_time,
@@ -605,15 +626,20 @@ export async function getUserPortalStatsForTimeRange(
           WHERE u.user_id = $1
           ${timeCondition}
           ORDER BY u.use_time DESC
-          LIMIT 10
+          LIMIT $2 OFFSET $3
         `,
-            [userId]
-        ),
-    ])
+                [userId, safePageSize, offset]
+            ),
+        ])
 
     const stats = statsResult.rows[0]
     const totalCalls = parseInt(stats.total_calls || '0')
     const totalCost = parseFloat(stats.total_cost || '0')
+    const recentRecordsTotal = parseInt(recordsCountResult.rows[0].total || '0')
+    const recentRecordsTotalPages =
+        recentRecordsTotal > 0
+            ? Math.ceil(recentRecordsTotal / safePageSize)
+            : 1
 
     return {
         totalCalls,
@@ -633,5 +659,11 @@ export async function getUserPortalStatsForTimeRange(
             cost: parseFloat(row.cost),
             balanceAfter: parseFloat(row.balance_after),
         })),
+        recentRecordsPagination: {
+            page: safePage,
+            pageSize: safePageSize,
+            total: recentRecordsTotal,
+            totalPages: recentRecordsTotalPages,
+        },
     }
 }

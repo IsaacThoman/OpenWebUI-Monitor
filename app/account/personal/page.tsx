@@ -6,6 +6,24 @@ import { BarChart3, ChevronDown, Clock, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+
 interface UserPortalResponse {
     success: boolean
     error?: string
@@ -37,6 +55,9 @@ interface TimeWindowStats {
 }
 
 type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
+type PaginationItemType = number | 'ellipsis'
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50]
 
 function formatCurrency(value: number, currencySymbol: string): string {
     return `${currencySymbol}${value.toFixed(4)}`
@@ -51,6 +72,40 @@ function formatDate(value: string | null, fallback: string): string {
         return fallback
     }
     return new Date(value).toLocaleString()
+}
+
+function getPaginationItems(
+    currentPage: number,
+    totalPages: number
+): PaginationItemType[] {
+    if (totalPages <= 5) {
+        return Array.from({ length: totalPages }, (_, index) => index + 1)
+    }
+
+    if (currentPage <= 3) {
+        return [1, 2, 3, 4, 'ellipsis', totalPages]
+    }
+
+    if (currentPage >= totalPages - 2) {
+        return [
+            1,
+            'ellipsis',
+            totalPages - 3,
+            totalPages - 2,
+            totalPages - 1,
+            totalPages,
+        ]
+    }
+
+    return [
+        1,
+        'ellipsis',
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+        'ellipsis',
+        totalPages,
+    ]
 }
 
 export default function PersonalPage() {
@@ -74,6 +129,10 @@ export default function PersonalPage() {
             balanceAfter: number
         }>
     >([])
+    const [recentRecordsPage, setRecentRecordsPage] = useState(1)
+    const [recentRecordsPageSize, setRecentRecordsPageSize] = useState(10)
+    const [recentRecordsTotal, setRecentRecordsTotal] = useState(0)
+    const [recentRecordsTotalPages, setRecentRecordsTotalPages] = useState(1)
     const [topModels, setTopModels] = useState<
         Array<{
             modelName: string
@@ -117,7 +176,11 @@ export default function PersonalPage() {
         loadAccount()
     }, [router, t])
 
-    const fetchTimeRangeStats = async (range: TimeRange) => {
+    const fetchTimeRangeStats = async (
+        range: TimeRange,
+        page: number,
+        pageSize: number
+    ) => {
         setStatsLoading(true)
         try {
             let days: number
@@ -141,10 +204,16 @@ export default function PersonalPage() {
                     days = 30
             }
 
-            const url =
-                days > 0
-                    ? `/api/v1/user-portal/stats?days=${days}`
-                    : '/api/v1/user-portal/stats'
+            const params = new URLSearchParams({
+                page: String(page),
+                pageSize: String(pageSize),
+            })
+
+            if (days > 0) {
+                params.set('days', String(days))
+            }
+
+            const url = `/api/v1/user-portal/stats?${params.toString()}`
 
             const response = await fetch(url)
             if (!response.ok) throw new Error('Failed to fetch stats')
@@ -158,6 +227,12 @@ export default function PersonalPage() {
                     averageCost: result.data.averageCost || 0,
                 })
                 setRecentRecords(result.data.recentRecords || [])
+                setRecentRecordsTotal(
+                    result.data.recentRecordsPagination?.total || 0
+                )
+                setRecentRecordsTotalPages(
+                    result.data.recentRecordsPagination?.totalPages || 1
+                )
                 setTopModels(result.data.topModels || [])
             }
         } catch {
@@ -168,8 +243,43 @@ export default function PersonalPage() {
     }
 
     useEffect(() => {
-        fetchTimeRangeStats(timeRange)
-    }, [timeRange])
+        fetchTimeRangeStats(timeRange, recentRecordsPage, recentRecordsPageSize)
+    }, [timeRange, recentRecordsPage, recentRecordsPageSize])
+
+    const paginationItems = getPaginationItems(
+        recentRecordsPage,
+        recentRecordsTotalPages
+    )
+    const recentRecordsStart =
+        recentRecordsTotal === 0
+            ? 0
+            : (recentRecordsPage - 1) * recentRecordsPageSize + 1
+    const recentRecordsEnd =
+        recentRecordsTotal === 0
+            ? 0
+            : recentRecordsStart + recentRecords.length - 1
+
+    const handleTimeRangeChange = (nextRange: TimeRange) => {
+        setTimeRange(nextRange)
+        setRecentRecordsPage(1)
+    }
+
+    const handleRecentRecordsPageSizeChange = (value: string) => {
+        setRecentRecordsPageSize(Number(value))
+        setRecentRecordsPage(1)
+    }
+
+    const handleRecentRecordsPageChange = (page: number) => {
+        if (
+            page < 1 ||
+            page > recentRecordsTotalPages ||
+            page === recentRecordsPage
+        ) {
+            return
+        }
+
+        setRecentRecordsPage(page)
+    }
 
     if (loading || !data) {
         return (
@@ -209,7 +319,9 @@ export default function PersonalPage() {
                         <select
                             value={timeRange}
                             onChange={(e) =>
-                                setTimeRange(e.target.value as TimeRange)
+                                handleTimeRangeChange(
+                                    e.target.value as TimeRange
+                                )
                             }
                             className="appearance-none bg-background border px-2 py-1 pr-6 text-xs focus:outline-none"
                         >
@@ -275,7 +387,7 @@ export default function PersonalPage() {
 
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="lg:col-span-2">
-                    <div className="border">
+                    <div className="border" id="recent-usage">
                         <div className="flex items-center justify-between border-b px-3 py-2">
                             <div className="flex items-center gap-2">
                                 <Zap className="h-3 w-3" />
@@ -284,7 +396,7 @@ export default function PersonalPage() {
                                 </h2>
                             </div>
                             <span className="text-xs text-muted-foreground">
-                                {recentRecords.length} records
+                                {formatNumber(recentRecordsTotal)} records
                             </span>
                         </div>
 
@@ -354,6 +466,107 @@ export default function PersonalPage() {
                                 </table>
                             </div>
                         )}
+
+                        <div className="flex flex-col gap-3 border-t px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">
+                                        Rows per page
+                                    </span>
+                                    <Select
+                                        value={String(recentRecordsPageSize)}
+                                        onValueChange={
+                                            handleRecentRecordsPageSizeChange
+                                        }
+                                    >
+                                        <SelectTrigger className="h-8 w-[84px] text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {PAGE_SIZE_OPTIONS.map((size) => (
+                                                <SelectItem
+                                                    key={size}
+                                                    value={String(size)}
+                                                >
+                                                    {size}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <span className="text-muted-foreground">
+                                    {recentRecordsStart}-{recentRecordsEnd} of{' '}
+                                    {formatNumber(recentRecordsTotal)}
+                                </span>
+                            </div>
+
+                            {recentRecordsTotalPages > 1 ? (
+                                <Pagination className="mx-0 w-auto justify-start sm:justify-end">
+                                    <PaginationContent className="flex-wrap justify-start sm:justify-end">
+                                        <PaginationItem>
+                                            <PaginationPrevious
+                                                href="#recent-usage"
+                                                onClick={(event) => {
+                                                    event.preventDefault()
+                                                    handleRecentRecordsPageChange(
+                                                        recentRecordsPage - 1
+                                                    )
+                                                }}
+                                                className={cn(
+                                                    'h-8 text-xs',
+                                                    recentRecordsPage === 1 &&
+                                                        'pointer-events-none opacity-50'
+                                                )}
+                                            />
+                                        </PaginationItem>
+                                        {paginationItems.map((item, index) => (
+                                            <PaginationItem
+                                                key={`${item}-${index}`}
+                                            >
+                                                {item === 'ellipsis' ? (
+                                                    <PaginationEllipsis />
+                                                ) : (
+                                                    <PaginationLink
+                                                        href="#recent-usage"
+                                                        isActive={
+                                                            item ===
+                                                            recentRecordsPage
+                                                        }
+                                                        size="icon"
+                                                        className="h-8 w-8 text-xs"
+                                                        onClick={(event) => {
+                                                            event.preventDefault()
+                                                            handleRecentRecordsPageChange(
+                                                                item
+                                                            )
+                                                        }}
+                                                    >
+                                                        {item}
+                                                    </PaginationLink>
+                                                )}
+                                            </PaginationItem>
+                                        ))}
+                                        <PaginationItem>
+                                            <PaginationNext
+                                                href="#recent-usage"
+                                                onClick={(event) => {
+                                                    event.preventDefault()
+                                                    handleRecentRecordsPageChange(
+                                                        recentRecordsPage + 1
+                                                    )
+                                                }}
+                                                className={cn(
+                                                    'h-8 text-xs',
+                                                    recentRecordsPage ===
+                                                        recentRecordsTotalPages &&
+                                                        'pointer-events-none opacity-50'
+                                                )}
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
 
