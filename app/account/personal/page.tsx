@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart3, ChevronDown, Clock, Loader2, Zap } from 'lucide-react'
+import { BarChart3, ChevronDown, Clock, Info, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -23,6 +23,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface UserPortalResponse {
@@ -416,6 +422,29 @@ export default function PersonalPage() {
                             data.overview.firstUseTime,
                             t('userPortal.account.never')
                         )}
+                    </p>
+                </div>
+                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <p className="mb-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                                    Lifetime water use
+                                    <Info className="h-3 w-3" />
+                                </p>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p className="max-w-[300px]">
+                                    Based on Altman's estimate where a query
+                                    uses 1/15 tsp of water & assumes typical
+                                    prompt cost ~$0.002 (common medical question
+                                    to gpt-5 mini in flex mode)
+                                </p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <p className="text-2xl font-medium">
+                        {(data.overview.totalCost / 23.04).toFixed(4)} Gal
                     </p>
                 </div>
             </div>
