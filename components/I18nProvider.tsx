@@ -12,23 +12,26 @@ import esCommon from '@/locales/es/common.json'
 
 const i18n = i18next.createInstance()
 
-void i18n.use(LanguageDetector).use(initReactI18next).init({
-    resources: {
-        en: {
-            common: enCommon,
+void i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+        resources: {
+            en: {
+                common: enCommon,
+            },
+            zh: {
+                common: zhCommon,
+            },
+            es: {
+                common: esCommon,
+            },
         },
-        zh: {
-            common: zhCommon,
+        fallbackLng: 'en',
+        interpolation: {
+            escapeValue: false,
         },
-        es: {
-            common: esCommon,
-        },
-    },
-    fallbackLng: 'en',
-    interpolation: {
-        escapeValue: false,
-    },
-})
+    })
 
 export default function I18nProvider({ children }: PropsWithChildren) {
     useEffect(() => {
@@ -40,8 +43,7 @@ export default function I18nProvider({ children }: PropsWithChildren) {
                 es: 'es',
             }
             const locale =
-                dayjsLocaleMap[i18n.resolvedLanguage || i18n.language] ||
-                'en'
+                dayjsLocaleMap[i18n.resolvedLanguage || i18n.language] || 'en'
             dayjs.locale(locale)
         }
 

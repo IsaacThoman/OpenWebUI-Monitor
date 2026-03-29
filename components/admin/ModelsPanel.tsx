@@ -12,7 +12,6 @@ import {
 } from '@ant-design/icons'
 import { Loader2 } from 'lucide-react'
 import type { ColumnsType } from 'antd/es/table'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
@@ -25,7 +24,6 @@ interface ModelResponse {
     name: string
     base_model_id: string
     system_prompt: string
-    imageUrl: string
     input_price: number
     output_price: number
     per_msg_price: number
@@ -37,7 +35,6 @@ interface Model {
     name: string
     base_model_id: string
     system_prompt: string
-    imageUrl: string
     input_price: number
     output_price: number
     per_msg_price: number
@@ -216,13 +213,6 @@ const TestProgressPanel = ({
                                                 }}
                                                 className="flex items-center gap-2 p-2 bg-muted/30"
                                             >
-                                                <Image
-                                                    src={model.imageUrl}
-                                                    alt={model.name}
-                                                    width={24}
-                                                    height={24}
-                                                    className="rounded-full"
-                                                />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="text-sm font-medium truncate">
                                                         {model.name}
@@ -522,15 +512,6 @@ export default function ModelsPanel() {
                         className="relative cursor-pointer"
                         onClick={() => handleTestSingleModel(record)}
                     >
-                        {record.imageUrl && (
-                            <Image
-                                src={record.imageUrl}
-                                alt={record.name}
-                                width={32}
-                                height={32}
-                                className="rounded-full object-cover"
-                            />
-                        )}
                         {record.testStatus && (
                             <div className="absolute -top-1 -right-1">
                                 {record.testStatus === 'testing' && (
@@ -850,17 +831,6 @@ export default function ModelsPanel() {
                         className="relative cursor-pointer group shrink-0"
                         onClick={() => handleTestSingleModel(record)}
                     >
-                        <div className="relative">
-                            {record.imageUrl && (
-                                <Image
-                                    src={record.imageUrl}
-                                    alt={record.name}
-                                    width={40}
-                                    height={40}
-                                    className="object-cover"
-                                />
-                            )}
-                        </div>
                         {record.testStatus && (
                             <div className="absolute -top-1 -right-1 z-10">
                                 <TestStatusIndicator
