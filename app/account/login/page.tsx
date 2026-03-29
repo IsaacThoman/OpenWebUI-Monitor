@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Link2, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
-import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -97,13 +96,11 @@ function AccountLoginContent() {
         <div className="flex min-h-screen items-center justify-center px-4 py-12 bg-dot-pattern">
             <div className="w-full max-w-md border p-6">
                 <div className="mb-6 text-center">
-                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center bg-muted">
-                        <Image
+                    <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center bg-muted overflow-hidden rounded-md">
+                        <img
                             src="/static/favicon.png"
                             alt="Logo"
-                            width={24}
-                            height={24}
-                            className="h-6 w-6"
+                            className="h-8 w-8 object-contain"
                         />
                     </div>
                     <h1 className="text-xl font-medium text-foreground">

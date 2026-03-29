@@ -352,7 +352,7 @@
     "userPortal": {
         "login": {
             "title": "Ver tu cuenta",
-            "description": "Ingresa el enlace seguro de estadísticas o el token de acceso que recibiste.",
+            "description": "Ingresa el enlace seguro de estadísticas o el token de visualización que recibiste.",
             "label": "Enlace o token de estadísticas",
             "placeholder": "Pega un enlace completo o un token",
             "submit": "Iniciar sesión",

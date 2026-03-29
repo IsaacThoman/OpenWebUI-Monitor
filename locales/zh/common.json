@@ -352,7 +352,7 @@
     "userPortal": {
         "login": {
             "title": "查看你的账户",
-            "description": "输入分配给你的安全统计链接或访问令牌。",
+            "description": "输入分配给你的安全统计链接或查看令牌。",
             "label": "统计链接或令牌",
             "placeholder": "粘贴完整链接或令牌",
             "submit": "登录",
