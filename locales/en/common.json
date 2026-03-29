@@ -13,6 +13,7 @@
         "back": "Back",
         "currency": "$",
         "count": "",
+        "tokens": "Tokens",
         "total": "Total",
         "prev": "Previous",
         "next": "Next",
@@ -395,6 +396,21 @@
             "topModels": {
                 "title": "Top models",
                 "calls": "calls"
+            },
+            "dailyUsage": {
+                "title": "Daily usage",
+                "callsLabel": "Calls",
+                "callsUnit": "calls",
+                "titles": {
+                    "usd": "Daily USD usage",
+                    "tokens": "Daily token usage",
+                    "calls": "Daily calls"
+                },
+                "stats": {
+                    "avgSpendPerDay": "Average spend per day",
+                    "avgTokensPerDay": "Average tokens per day",
+                    "avgCallsPerDay": "Average calls per day"
+                }
             },
             "records": {
                 "title": "Recent usage",

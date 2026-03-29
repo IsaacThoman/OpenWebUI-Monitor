@@ -6,6 +6,7 @@ import { BarChart3, ChevronDown, Clock, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
+import DailyUsageChart from '@/components/panel/DailyUsageChart'
 import {
     Pagination,
     PaginationContent,
@@ -140,6 +141,23 @@ export default function PersonalPage() {
             totalCalls: number
         }>
     >([])
+    const [dailyUsage, setDailyUsage] = useState<
+        Array<{
+            date: string
+            totalCost: number
+            totalTokens: number
+            totalCalls: number
+            models: Array<{
+                name: string
+                cost: number
+                tokens: number
+                calls: number
+            }>
+        }>
+    >([])
+    const [dailyUsageMetric, setDailyUsageMetric] = useState<
+        'cost' | 'tokens' | 'calls'
+    >('cost')
     const router = useRouter()
     const { t } = useTranslation('common')
     const currencySymbol = t('common.currency')
@@ -234,6 +252,7 @@ export default function PersonalPage() {
                     result.data.recentRecordsPagination?.totalPages || 1
                 )
                 setTopModels(result.data.topModels || [])
+                setDailyUsage(result.data.dailyUsage || [])
             }
         } catch {
             // Keep existing stats on error
@@ -383,6 +402,15 @@ export default function PersonalPage() {
                         </p>
                     </div>
                 </div>
+            </div>
+
+            <div className="mb-4">
+                <DailyUsageChart
+                    loading={statsLoading}
+                    data={dailyUsage}
+                    metric={dailyUsageMetric}
+                    onMetricChange={setDailyUsageMetric}
+                />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-3">

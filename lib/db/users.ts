@@ -540,6 +540,18 @@ export async function getUserPortalStatsForTimeRange(
     totalTokens: number
     totalCost: number
     averageCost: number
+    dailyUsage: Array<{
+        date: string
+        totalCost: number
+        totalTokens: number
+        totalCalls: number
+        models: Array<{
+            name: string
+            cost: number
+            tokens: number
+            calls: number
+        }>
+    }>
     topModels: Array<{
         modelName: string
         totalCost: number
@@ -569,10 +581,15 @@ export async function getUserPortalStatsForTimeRange(
     const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100)
     const offset = (safePage - 1) * safePageSize
 
-    const [statsResult, topModelsResult, recordsCountResult, recordsResult] =
-        await Promise.all([
-            query(
-                `
+    const [
+        statsResult,
+        dailyUsageResult,
+        topModelsResult,
+        recordsCountResult,
+        recordsResult,
+    ] = await Promise.all([
+        query(
+            `
           SELECT
             COALESCE(SUM(cost), 0) AS total_cost,
             COUNT(*) AS total_calls,
@@ -581,10 +598,27 @@ export async function getUserPortalStatsForTimeRange(
           WHERE user_id = $1
           ${timeCondition.replace(/u\./g, '')}
         `,
-                [userId]
-            ),
-            query(
-                `
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            DATE(use_time) as date,
+            COALESCE(mp.name, u.model_name) as display_name,
+            COALESCE(SUM(u.cost), 0) AS total_cost,
+            COALESCE(SUM(u.input_tokens + u.output_tokens), 0) AS total_tokens,
+            COUNT(*) AS total_calls
+          FROM user_usage_records u
+          LEFT JOIN model_prices mp ON u.model_name = mp.id
+          WHERE u.user_id = $1
+          ${timeCondition}
+          GROUP BY DATE(use_time), COALESCE(mp.name, u.model_name)
+          ORDER BY DATE(use_time) ASC, total_cost DESC
+        `,
+            [userId]
+        ),
+        query(
+            `
           SELECT
             COALESCE(mp.name, u.model_name) as display_name,
             COALESCE(SUM(u.cost), 0) AS total_cost,
@@ -597,19 +631,19 @@ export async function getUserPortalStatsForTimeRange(
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
-                [userId]
-            ),
-            query(
-                `
+            [userId]
+        ),
+        query(
+            `
           SELECT COUNT(*) AS total
           FROM user_usage_records u
           WHERE u.user_id = $1
           ${timeCondition}
         `,
-                [userId]
-            ),
-            query(
-                `
+            [userId]
+        ),
+        query(
+            `
           SELECT
             u.id,
             u.use_time,
@@ -626,9 +660,9 @@ export async function getUserPortalStatsForTimeRange(
           ORDER BY u.use_time DESC
           LIMIT $2 OFFSET $3
         `,
-                [userId, safePageSize, offset]
-            ),
-        ])
+            [userId, safePageSize, offset]
+        ),
+    ])
 
     const stats = statsResult.rows[0]
     const totalCalls = parseInt(stats.total_calls || '0')
@@ -639,11 +673,73 @@ export async function getUserPortalStatsForTimeRange(
             ? Math.ceil(recentRecordsTotal / safePageSize)
             : 1
 
+    // Group daily usage by date and process models
+    const dailyUsageMap = new Map<
+        string,
+        {
+            date: string
+            totalCost: number
+            totalTokens: number
+            totalCalls: number
+            models: Map<
+                string,
+                { name: string; cost: number; tokens: number; calls: number }
+            >
+        }
+    >()
+
+    for (const row of dailyUsageResult.rows) {
+        const date =
+            row.date instanceof Date
+                ? row.date.toISOString().slice(0, 10)
+                : String(row.date)
+        if (!dailyUsageMap.has(date)) {
+            dailyUsageMap.set(date, {
+                date,
+                totalCost: 0,
+                totalTokens: 0,
+                totalCalls: 0,
+                models: new Map(),
+            })
+        }
+        const day = dailyUsageMap.get(date)!
+        day.totalCost += parseFloat(row.total_cost || '0')
+        day.totalTokens += parseInt(row.total_tokens || '0')
+        day.totalCalls += parseInt(row.total_calls || '0')
+
+        const modelName = row.display_name || row.model_name
+        if (!day.models.has(modelName)) {
+            day.models.set(modelName, {
+                name: modelName,
+                cost: 0,
+                tokens: 0,
+                calls: 0,
+            })
+        }
+        const model = day.models.get(modelName)!
+        model.cost += parseFloat(row.total_cost || '0')
+        model.tokens += parseInt(row.total_tokens || '0')
+        model.calls += parseInt(row.total_calls || '0')
+    }
+
+    const dailyUsage = Array.from(dailyUsageMap.values())
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map((day) => ({
+            date: day.date,
+            totalCost: day.totalCost,
+            totalTokens: day.totalTokens,
+            totalCalls: day.totalCalls,
+            models: Array.from(day.models.values()).sort(
+                (a, b) => b.cost - a.cost
+            ),
+        }))
+
     return {
         totalCalls,
         totalTokens: parseInt(stats.total_tokens || '0'),
         totalCost,
         averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
+        dailyUsage,
         topModels: topModelsResult.rows.map((row) => ({
             modelName: row.display_name || row.model_name,
             totalCost: parseFloat(row.total_cost),
