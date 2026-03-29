@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'crypto'
 
-import { ensureTablesExist, query } from './client'
+import { query } from './client'
 
 export interface User {
     id: string
@@ -68,47 +68,12 @@ function generateViewerToken(): string {
 }
 
 async function ensureViewerTokenColumnsExist() {
-    const viewerTokenPlainColumnExists = await query(`
-    SELECT EXISTS (
-      SELECT FROM information_schema.columns
-      WHERE table_name = 'users' AND column_name = 'viewer_token'
-    );
+    await query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS viewer_token TEXT,
+      ADD COLUMN IF NOT EXISTS viewer_token_hash TEXT,
+      ADD COLUMN IF NOT EXISTS viewer_token_created_at TIMESTAMP WITH TIME ZONE;
   `)
-
-    if (!viewerTokenPlainColumnExists.rows[0].exists) {
-        await query(`
-      ALTER TABLE users
-        ADD COLUMN viewer_token TEXT;
-    `)
-    }
-
-    const viewerTokenColumnExists = await query(`
-    SELECT EXISTS (
-      SELECT FROM information_schema.columns
-      WHERE table_name = 'users' AND column_name = 'viewer_token_hash'
-    );
-  `)
-
-    if (!viewerTokenColumnExists.rows[0].exists) {
-        await query(`
-      ALTER TABLE users
-        ADD COLUMN viewer_token_hash TEXT;
-    `)
-    }
-
-    const viewerTokenCreatedAtColumnExists = await query(`
-    SELECT EXISTS (
-      SELECT FROM information_schema.columns
-      WHERE table_name = 'users' AND column_name = 'viewer_token_created_at'
-    );
-  `)
-
-    if (!viewerTokenCreatedAtColumnExists.rows[0].exists) {
-        await query(`
-      ALTER TABLE users
-        ADD COLUMN viewer_token_created_at TIMESTAMP WITH TIME ZONE;
-    `)
-    }
 
     await query(`
     CREATE UNIQUE INDEX IF NOT EXISTS users_viewer_token_idx
@@ -188,6 +153,8 @@ export async function ensureUserTableExists() {
 }
 
 export async function getOrCreateUser(userData: CreateUserInput) {
+    await ensureUserTableExists()
+
     const result = await query(
         `
     INSERT INTO users (id, email, name, role, balance)
@@ -412,7 +379,7 @@ export async function getOrCreateUserViewerToken(userId: string) {
 export async function getUserByViewerToken(
     token: string
 ): Promise<User | null> {
-    await ensureTablesExist()
+    await ensureUserTableExists()
 
     const result = await query(
         `
@@ -432,7 +399,7 @@ export async function getUserByViewerToken(
 export async function getUserPortalStats(
     userId: string
 ): Promise<UserPortalStats | null> {
-    await ensureTablesExist()
+    await ensureUserTableExists()
 
     const [
         userResult,
