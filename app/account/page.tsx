@@ -1,30 +1,25 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import {
     BarChart3,
     Check,
-    Clock3,
     Copy,
-    CreditCard,
     ExternalLink,
     LogOut,
     Loader2,
-    Sparkles,
-    Wallet,
     Zap,
     Users,
     Database,
     PieChart,
-    FileText,
-    Shield,
     Globe,
     Settings,
     Github,
-    ChevronDown,
     X,
+    ChevronDown,
+    Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -35,7 +30,6 @@ import { copyTextToClipboard } from '@/lib/clipboard'
 import { APP_VERSION } from '@/lib/version'
 import DatabaseBackup from '@/components/DatabaseBackup'
 
-// Lazy-load admin panel components for code splitting
 const UsersPanel = dynamic(() => import('@/components/admin/UsersPanel'), {
     loading: () => <AdminTabLoader />,
     ssr: false,
@@ -51,15 +45,11 @@ const AnalyticsPanel = dynamic(
         ssr: false,
     }
 )
-const RecordsPanel = dynamic(() => import('@/components/admin/RecordsPanel'), {
-    loading: () => <AdminTabLoader />,
-    ssr: false,
-})
 
 function AdminTabLoader() {
     return (
         <div className="flex items-center justify-center py-24">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
     )
 }
@@ -84,31 +74,18 @@ interface UserPortalResponse {
             firstUseTime: string | null
             lastUseTime: string | null
         }
-        recentWindow: {
-            totalCost: number
-            totalCalls: number
-            totalTokens: number
-        }
-        topModels: Array<{
-            modelName: string
-            totalCost: number
-            totalCalls: number
-            totalTokens: number
-        }>
-        recentRecords: Array<{
-            id: number
-            useTime: string
-            modelName: string
-            inputTokens: number
-            outputTokens: number
-            totalTokens: number
-            cost: number
-            balanceAfter: number
-        }>
     }
 }
 
+interface TimeWindowStats {
+    totalCalls: number
+    totalTokens: number
+    totalCost: number
+    averageCost: number
+}
+
 type TabId = 'dashboard' | 'users' | 'models' | 'panel'
+type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
 
 function formatCurrency(value: number, currencySymbol: string): string {
     return `${currencySymbol}${value.toFixed(4)}`
@@ -122,7 +99,6 @@ function formatDate(value: string | null, fallback: string): string {
     if (!value) {
         return fallback
     }
-
     return new Date(value).toLocaleString()
 }
 
@@ -130,13 +106,20 @@ function formatShortDate(value: string | null, fallback: string): string {
     if (!value) {
         return fallback
     }
-
     const date = new Date(value)
     return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
     })
+}
+
+const timeRangeLabels: Record<TimeRange, string> = {
+    '24h': 'Last 24 hours',
+    '7d': 'Last 7 days',
+    '30d': 'Last 30 days',
+    '90d': 'Last 90 days',
+    all: 'All time',
 }
 
 export default function AccountPage() {
@@ -173,10 +156,10 @@ export default function AccountPage() {
                 }
 
                 setData(payload.data)
-            } catch (error) {
+            } catch (err) {
                 toast.error(
-                    error instanceof Error
-                        ? error.message
+                    err instanceof Error
+                        ? err.message
                         : t('userPortal.account.loadFailed')
                 )
             } finally {
@@ -187,22 +170,20 @@ export default function AccountPage() {
         loadAccount()
     }, [router, t])
 
-    // Auto-check for updates on load
     useEffect(() => {
         const autoCheckUpdate = async () => {
             try {
                 const response = await fetch(
                     'https://api.github.com/repos/variantconst/openwebui-monitor/releases/latest'
                 )
-                const data = await response.json()
-                const latestVer = data.tag_name
+                const releaseData = await response.json()
+                const latestVer = releaseData.tag_name
                 if (!latestVer) return
 
                 const currentVer = APP_VERSION.replace(/^v/, '')
                 const newVer = latestVer.replace(/^v/, '')
 
-                const ignoredVersion =
-                    localStorage.getItem('ignoredVersion')
+                const ignoredVersion = localStorage.getItem('ignoredVersion')
                 if (currentVer !== newVer && ignoredVersion !== latestVer) {
                     toast.info(
                         `${t('header.update.newVersion')}: ${latestVer}`,
@@ -217,9 +198,7 @@ export default function AccountPage() {
                                     ),
                             },
                             cancel: {
-                                label: t('header.update.skipUpdate', {
-                                    defaultValue: 'Ignore',
-                                }),
+                                label: t('header.update.skipUpdate'),
                                 onClick: () => {
                                     localStorage.setItem(
                                         'ignoredVersion',
@@ -230,30 +209,27 @@ export default function AccountPage() {
                         }
                     )
                 }
-            } catch (error) {
-                // silently fail — update check is non-critical
+            } catch {
+                // silently fail
             }
         }
 
         autoCheckUpdate()
     }, [t])
 
-    // Fetch API key for admins
     useEffect(() => {
         if (!isAdmin) return
-
         const fetchApiKey = async () => {
             try {
                 const res = await fetch('/api/v1/config')
-                const data = await res.json()
-                if (data?.apiKey) {
-                    setApiKey(data.apiKey)
+                const configData = await res.json()
+                if (configData?.apiKey) {
+                    setApiKey(configData.apiKey)
                 }
             } catch {
                 // silently fail
             }
         }
-
         fetchApiKey()
     }, [isAdmin])
 
@@ -272,27 +248,23 @@ export default function AccountPage() {
 
     const handleCopyLoginUrl = async () => {
         if (!data?.profile.viewerToken) return
-
         try {
             const loginUrl = `${window.location.origin}/u/${data.profile.viewerToken}`
             await copyTextToClipboard(loginUrl)
             setCopied(true)
             toast.success(t('userPortal.account.copyUrl.success'))
             setTimeout(() => setCopied(false), 2000)
-        } catch (error) {
-            console.error('Failed to copy login URL:', error)
+        } catch {
             toast.error(t('userPortal.account.copyUrl.error'))
         }
     }
 
     const handleCopyApiKey = async () => {
         if (!apiKey) return
-
         try {
             await copyTextToClipboard(apiKey)
             toast.success(t('header.messages.apiKeyCopied'))
-        } catch (error) {
-            console.error('Failed to copy API key:', error)
+        } catch {
             toast.error(t('header.messages.copyFailed'))
         }
     }
@@ -308,8 +280,8 @@ export default function AccountPage() {
             const response = await fetch(
                 'https://api.github.com/repos/variantconst/openwebui-monitor/releases/latest'
             )
-            const data = await response.json()
-            const latestVersion = data.tag_name
+            const releaseData = await response.json()
+            const latestVersion = releaseData.tag_name
 
             if (!latestVersion) {
                 throw new Error(t('header.messages.getVersionFailed'))
@@ -335,9 +307,8 @@ export default function AccountPage() {
                     }
                 )
             }
-        } catch (error) {
+        } catch {
             toast.error(t('header.messages.updateCheckFailed'))
-            console.error(t('header.messages.updateCheckFailed'), error)
         } finally {
             setIsCheckingUpdate(false)
         }
@@ -345,9 +316,9 @@ export default function AccountPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
-                <div className="flex items-center gap-3 text-sm text-slate-400">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     {t('userPortal.account.loading')}
                 </div>
             </div>
@@ -403,27 +374,23 @@ export default function AccountPage() {
               : t('header.language.en')
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100">
-            {/* Top Header Bar */}
-            <div className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-14 items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
-                                <Shield className="h-4 w-4 text-emerald-400" />
-                            </div>
-                            <span className="text-sm font-semibold text-white">
+        <div className="min-h-screen bg-background text-foreground">
+            {/* Header */}
+            <div className="border-b bg-background sticky top-0 z-50">
+                <div className="mx-auto max-w-6xl px-4">
+                    <div className="flex h-12 items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
                                 {t('common.appName')}
                             </span>
                             {isAdmin && (
-                                <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
+                                <span className="px-1.5 py-0.5 text-xs bg-muted text-muted-foreground">
                                     Admin
                                 </span>
                             )}
                         </div>
 
                         <div className="flex items-center gap-1">
-                            {/* Language Switcher */}
                             <Dropdown
                                 menu={{
                                     items: [
@@ -450,39 +417,36 @@ export default function AccountPage() {
                                 }}
                                 trigger={['click']}
                             >
-                                <button className="flex h-8 items-center gap-1 rounded-md px-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white">
-                                    <Globe className="h-3.5 w-3.5" />
-                                    <span className="hidden text-xs font-medium sm:inline">
+                                <button className="flex h-7 items-center gap-1 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                                    <Globe className="h-3 w-3" />
+                                    <span className="hidden sm:inline">
                                         {langLabel}
                                     </span>
-                                    <ChevronDown className="h-3 w-3" />
                                 </button>
                             </Dropdown>
 
-                            {/* Settings (admin only) */}
                             {isAdmin && (
                                 <button
-                                    className="flex h-8 items-center gap-1 rounded-md px-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+                                    className="flex h-7 items-center px-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                                     onClick={() =>
                                         setIsSettingsOpen(!isSettingsOpen)
                                     }
                                 >
-                                    <Settings className="h-3.5 w-3.5" />
+                                    <Settings className="h-3 w-3" />
                                 </button>
                             )}
 
-                            {/* Copy Login URL */}
                             {data.profile.viewerToken && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 text-slate-400 hover:text-white hover:bg-slate-800"
+                                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
                                     onClick={handleCopyLoginUrl}
                                 >
                                     {copied ? (
-                                        <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-400" />
+                                        <Check className="mr-1 h-3 w-3" />
                                     ) : (
-                                        <Copy className="mr-1.5 h-3.5 w-3.5" />
+                                        <Copy className="mr-1 h-3 w-3" />
                                     )}
                                     <span className="hidden sm:inline">
                                         {copied
@@ -496,18 +460,17 @@ export default function AccountPage() {
                                 </Button>
                             )}
 
-                            {/* Logout */}
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 text-slate-400 hover:text-white hover:bg-slate-800"
+                                className="h-7 text-xs text-muted-foreground hover:text-foreground"
                                 onClick={handleLogout}
                                 disabled={loggingOut}
                             >
                                 {loggingOut ? (
-                                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                                 ) : (
-                                    <LogOut className="mr-1.5 h-3.5 w-3.5" />
+                                    <LogOut className="mr-1 h-3 w-3" />
                                 )}
                                 <span className="hidden sm:inline">
                                     {t('userPortal.account.logout')}
@@ -516,16 +479,16 @@ export default function AccountPage() {
                         </div>
                     </div>
 
-                    {/* Tab Navigation */}
-                    <div className="-mb-px flex gap-1 overflow-x-auto scrollbar-hide">
+                    {/* Tabs */}
+                    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                         {visibleTabs.map((tab) => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                                className={`flex items-center gap-2 whitespace-nowrap border-b px-3 py-2 text-xs transition-colors ${
                                     activeTab === tab.id
-                                        ? 'border-emerald-400 text-emerald-400'
-                                        : 'border-transparent text-slate-400 hover:border-slate-700 hover:text-slate-300'
+                                        ? 'border-foreground text-foreground'
+                                        : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
                             >
                                 {tab.icon}
@@ -536,29 +499,29 @@ export default function AccountPage() {
                 </div>
             </div>
 
-            {/* Settings Panel (admin only) */}
+            {/* Settings Panel */}
             {isAdmin && isSettingsOpen && (
-                <div className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md">
-                    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-medium text-slate-300">
+                <div className="border-b bg-muted/50">
+                    <div className="mx-auto max-w-6xl px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-xs font-medium text-muted-foreground">
                                 {t('header.menu.settings', {
                                     defaultValue: 'Settings',
                                 })}
                             </h3>
                             <button
-                                className="rounded-md p-1 text-slate-500 hover:bg-slate-800 hover:text-slate-300"
+                                className="p-1 text-muted-foreground hover:text-foreground"
                                 onClick={() => setIsSettingsOpen(false)}
                             >
-                                <X className="h-4 w-4" />
+                                <X className="h-3 w-3" />
                             </button>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             <button
                                 onClick={handleCopyApiKey}
-                                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                                className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
                             >
-                                <Copy className="h-4 w-4 text-sky-400" />
+                                <Copy className="h-3 w-3" />
                                 {t('header.menu.copyApiKey')}
                             </button>
                             <button
@@ -566,20 +529,20 @@ export default function AccountPage() {
                                     setIsBackupModalOpen(true)
                                     setIsSettingsOpen(false)
                                 }}
-                                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                                className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
                             >
-                                <Database className="h-4 w-4 text-rose-400" />
+                                <Database className="h-3 w-3" />
                                 {t('header.menu.dataBackup')}
                             </button>
                             <button
                                 onClick={checkUpdate}
                                 disabled={isCheckingUpdate}
-                                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white disabled:opacity-50"
+                                className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors disabled:opacity-50"
                             >
                                 {isCheckingUpdate ? (
-                                    <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                                    <Loader2 className="h-3 w-3 animate-spin" />
                                 ) : (
-                                    <Github className="h-4 w-4 text-emerald-400" />
+                                    <Github className="h-3 w-3" />
                                 )}
                                 {t('header.menu.checkUpdate')}
                             </button>
@@ -587,13 +550,13 @@ export default function AccountPage() {
                                 href="https://github.com/VariantConst/OpenWebUI-Monitor"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                                className="flex items-center gap-2 rounded border border-border bg-background px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
                             >
-                                <ExternalLink className="h-4 w-4 text-violet-400" />
+                                <ExternalLink className="h-3 w-3" />
                                 GitHub
                             </a>
                         </div>
-                        <div className="mt-2 text-right text-xs text-slate-600">
+                        <div className="mt-2 text-right text-xs text-muted-foreground">
                             v{APP_VERSION}
                         </div>
                     </div>
@@ -608,8 +571,8 @@ export default function AccountPage() {
                 />
             )}
 
-            {/* Tab Content */}
-            <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+            {/* Content */}
+            <div className="mx-auto max-w-6xl px-4 py-4">
                 {activeTab === 'dashboard' && (
                     <DashboardTab
                         data={data}
@@ -632,14 +595,12 @@ export default function AccountPage() {
                         <AnalyticsPanel />
                     </div>
                 )}
-
             </div>
         </div>
     )
 }
 
-// ─── Dashboard Tab (existing user portal content) ──────────────────────────
-
+// Dashboard Tab
 function DashboardTab({
     data,
     currencySymbol,
@@ -649,282 +610,256 @@ function DashboardTab({
     currencySymbol: string
     t: (key: string, options?: Record<string, unknown>) => string
 }) {
+    const [timeRange, setTimeRange] = useState<TimeRange>('30d')
+    const [stats, setStats] = useState<TimeWindowStats>({
+        totalCalls: 0,
+        totalTokens: 0,
+        totalCost: 0,
+        averageCost: 0,
+    })
+    const [statsLoading, setStatsLoading] = useState(false)
+    const [recentRecords, setRecentRecords] = useState<
+        Array<{
+            id: number
+            useTime: string
+            modelName: string
+            totalTokens: number
+            cost: number
+            balanceAfter: number
+        }>
+    >([])
+    const [topModels, setTopModels] = useState<
+        Array<{
+            modelName: string
+            totalCost: number
+            totalCalls: number
+        }>
+    >([])
+
+    const fetchTimeRangeStats = async (range: TimeRange) => {
+        setStatsLoading(true)
+        try {
+            let days: number
+            switch (range) {
+                case '24h':
+                    days = 1
+                    break
+                case '7d':
+                    days = 7
+                    break
+                case '30d':
+                    days = 30
+                    break
+                case '90d':
+                    days = 90
+                    break
+                case 'all':
+                    days = 0
+                    break
+                default:
+                    days = 30
+            }
+
+            const url =
+                days > 0
+                    ? `/api/v1/user-portal/stats?days=${days}`
+                    : '/api/v1/user-portal/stats'
+
+            const response = await fetch(url)
+            if (!response.ok) throw new Error('Failed to fetch stats')
+
+            const result = await response.json()
+            if (result.data) {
+                setStats({
+                    totalCalls: result.data.totalCalls || 0,
+                    totalTokens: result.data.totalTokens || 0,
+                    totalCost: result.data.totalCost || 0,
+                    averageCost: result.data.averageCost || 0,
+                })
+                setRecentRecords(result.data.recentRecords || [])
+                setTopModels(result.data.topModels || [])
+            }
+        } catch {
+            // Keep existing stats on error
+        } finally {
+            setStatsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTimeRangeStats(timeRange)
+    }, [timeRange])
+
     return (
         <div>
             {/* User Info */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-white">
-                    {data.profile.name}
-                </h1>
-                <p className="mt-1 text-sm text-slate-400">
+            <div className="mb-4">
+                <h1 className="text-lg font-medium">{data.profile.name}</h1>
+                <p className="text-xs text-muted-foreground">
                     {data.profile.email}
                 </p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10">
-                        <Wallet className="h-4 w-4 text-emerald-400" />
+            {/* Balance - Left aligned, not a card */}
+            <div className="mb-6">
+                <p className="text-xs text-muted-foreground mb-1">
+                    Current balance
+                </p>
+                <p className="text-2xl font-medium">
+                    {formatCurrency(data.profile.balance, currencySymbol)}
+                </p>
+            </div>
+
+            {/* Time Range Selector + Stats */}
+            <div className="mb-4 border">
+                <div className="flex items-center justify-between border-b px-3 py-2">
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        <span className="text-xs font-medium">
+                            Usage overview
+                        </span>
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-xs text-slate-400">
-                            {t('userPortal.account.cards.balance')}
-                        </p>
-                        <p className="truncate text-lg font-semibold text-emerald-400">
-                            {formatCurrency(
-                                data.profile.balance,
-                                currencySymbol
-                            )}
-                        </p>
+                    <div className="relative">
+                        <select
+                            value={timeRange}
+                            onChange={(e) =>
+                                setTimeRange(e.target.value as TimeRange)
+                            }
+                            className="appearance-none bg-background border px-2 py-1 pr-6 text-xs focus:outline-none"
+                        >
+                            <option value="24h">24 hours</option>
+                            <option value="7d">7 days</option>
+                            <option value="30d">30 days</option>
+                            <option value="90d">90 days</option>
+                            <option value="all">All time</option>
+                        </select>
+                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none text-muted-foreground" />
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-500/10">
-                        <BarChart3 className="h-4 w-4 text-sky-400" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-xs text-slate-400">
-                            {t('userPortal.account.cards.totalCalls')}
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x">
+                    <div className="p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            Calls
                         </p>
-                        <p className="truncate text-lg font-semibold text-white">
-                            {formatNumber(data.overview.totalCalls)}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-500/10">
-                        <Sparkles className="h-4 w-4 text-violet-400" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-xs text-slate-400">
-                            {t('userPortal.account.cards.totalTokens')}
-                        </p>
-                        <p className="truncate text-lg font-semibold text-white">
-                            {formatNumber(data.overview.totalTokens)}
+                        <p className="text-lg font-medium">
+                            {statsLoading
+                                ? '-'
+                                : formatNumber(stats.totalCalls)}
                         </p>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-amber-500/10">
-                        <Clock3 className="h-4 w-4 text-amber-400" />
-                    </div>
-                    <div className="min-w-0">
-                        <p className="text-xs text-slate-400">
-                            {t('userPortal.account.cards.lastActive')}
+                    <div className="p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            Tokens
                         </p>
-                        <p className="truncate text-sm font-medium text-white">
-                            {data.overview.lastUseTime
-                                ? formatShortDate(
-                                      data.overview.lastUseTime,
-                                      t('userPortal.account.never')
-                                  )
-                                : t('userPortal.account.never')}
+                        <p className="text-lg font-medium">
+                            {statsLoading
+                                ? '-'
+                                : formatNumber(stats.totalTokens)}
+                        </p>
+                    </div>
+                    <div className="p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            Spend
+                        </p>
+                        <p className="text-lg font-medium">
+                            {statsLoading
+                                ? '-'
+                                : formatCurrency(
+                                      stats.totalCost,
+                                      currencySymbol
+                                  )}
+                        </p>
+                    </div>
+                    <div className="p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            Avg per call
+                        </p>
+                        <p className="text-lg font-medium">
+                            {statsLoading
+                                ? '-'
+                                : formatCurrency(
+                                      stats.averageCost,
+                                      currencySymbol
+                                  )}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Left Column */}
-                <div className="space-y-6 lg:col-span-2">
-                    {/* Recent Activity */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/30">
-                        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+            {/* Main Grid */}
+            <div className="grid gap-4 lg:grid-cols-3">
+                {/* Left - Recent Usage */}
+                <div className="lg:col-span-2">
+                    <div className="border">
+                        <div className="flex items-center justify-between border-b px-3 py-2">
                             <div className="flex items-center gap-2">
-                                <Zap className="h-4 w-4 text-sky-400" />
-                                <h2 className="text-sm font-medium text-white">
-                                    {t(
-                                        'userPortal.account.recentActivity.title'
-                                    )}
+                                <Zap className="h-3 w-3" />
+                                <h2 className="text-xs font-medium">
+                                    Recent usage
                                 </h2>
                             </div>
-                        </div>
-                        <div className="grid divide-y divide-slate-800 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.recentActivity.calls'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-xl font-semibold text-white">
-                                    {formatNumber(
-                                        data.recentWindow.totalCalls
-                                    )}
-                                </p>
-                            </div>
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.recentActivity.tokens'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-xl font-semibold text-white">
-                                    {formatNumber(
-                                        data.recentWindow.totalTokens
-                                    )}
-                                </p>
-                            </div>
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.recentActivity.cost'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-xl font-semibold text-white">
-                                    {formatCurrency(
-                                        data.recentWindow.totalCost,
-                                        currencySymbol
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Lifetime Overview */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/30">
-                        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-                            <div className="flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-violet-400" />
-                                <h2 className="text-sm font-medium text-white">
-                                    {t('userPortal.account.overview.title')}
-                                </h2>
-                            </div>
-                        </div>
-                        <div className="grid divide-y divide-slate-800 sm:grid-cols-3 sm:divide-y-0 sm:divide-x">
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.overview.totalSpend'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-lg font-semibold text-white">
-                                    {formatCurrency(
-                                        data.overview.totalCost,
-                                        currencySymbol
-                                    )}
-                                </p>
-                            </div>
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.overview.averageCost'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-lg font-semibold text-white">
-                                    {formatCurrency(
-                                        data.overview.averageCost,
-                                        currencySymbol
-                                    )}
-                                </p>
-                            </div>
-                            <div className="p-4">
-                                <p className="text-xs text-slate-500">
-                                    {t(
-                                        'userPortal.account.overview.firstUse'
-                                    )}
-                                </p>
-                                <p className="mt-1 text-lg font-semibold text-white">
-                                    {formatShortDate(
-                                        data.overview.firstUseTime,
-                                        t('userPortal.account.never')
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Recent Records Table */}
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/30">
-                        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-                            <div className="flex items-center gap-2">
-                                <Clock3 className="h-4 w-4 text-slate-400" />
-                                <h2 className="text-sm font-medium text-white">
-                                    {t('userPortal.account.records.title')}
-                                </h2>
-                            </div>
-                            <span className="text-xs text-slate-500">
-                                {data.recentRecords.length}{' '}
-                                {data.recentRecords.length === 1
-                                    ? 'record'
-                                    : 'records'}
+                            <span className="text-xs text-muted-foreground">
+                                {recentRecords.length} records
                             </span>
                         </div>
 
-                        {data.recentRecords.length === 0 ? (
-                            <div className="p-8 text-center text-sm text-slate-500">
+                        {recentRecords.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-muted-foreground">
                                 {t('userPortal.account.empty')}
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                                <table className="w-full text-xs">
                                     <thead>
-                                        <tr className="border-b border-slate-800 text-left text-xs text-slate-500">
-                                            <th className="px-4 py-2 font-medium">
-                                                {t(
-                                                    'userPortal.account.records.time'
-                                                )}
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="px-3 py-2 font-normal">
+                                                Time
                                             </th>
-                                            <th className="px-4 py-2 font-medium">
-                                                {t(
-                                                    'userPortal.account.records.model'
-                                                )}
+                                            <th className="px-3 py-2 font-normal">
+                                                Model
                                             </th>
-                                            <th className="px-4 py-2 font-medium">
-                                                {t(
-                                                    'userPortal.account.records.tokens'
-                                                )}
+                                            <th className="px-3 py-2 font-normal">
+                                                Tokens
                                             </th>
-                                            <th className="px-4 py-2 font-medium">
-                                                {t(
-                                                    'userPortal.account.records.cost'
-                                                )}
+                                            <th className="px-3 py-2 font-normal">
+                                                Cost
                                             </th>
-                                            <th className="px-4 py-2 font-medium text-right">
-                                                {t(
-                                                    'userPortal.account.records.balanceAfter'
-                                                )}
+                                            <th className="px-3 py-2 font-normal text-right">
+                                                Balance after
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-800/50">
-                                        {data.recentRecords.map((record) => (
-                                            <tr
-                                                key={record.id}
-                                                className="text-slate-300"
-                                            >
-                                                <td className="px-4 py-2.5 text-xs">
+                                    <tbody className="divide-y">
+                                        {recentRecords.map((record) => (
+                                            <tr key={record.id}>
+                                                <td className="px-3 py-2 text-xs text-muted-foreground">
                                                     {formatDate(
                                                         record.useTime,
                                                         '-'
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-2.5 font-medium text-white">
+                                                <td className="px-3 py-2">
                                                     <span
-                                                        className="block max-w-[200px] truncate"
-                                                        title={
-                                                            record.modelName
-                                                        }
+                                                        className="block max-w-[150px] truncate"
+                                                        title={record.modelName}
                                                     >
                                                         {record.modelName}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-2.5">
+                                                <td className="px-3 py-2">
                                                     {formatNumber(
                                                         record.totalTokens
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-2.5">
+                                                <td className="px-3 py-2">
                                                     {formatCurrency(
                                                         record.cost,
                                                         currencySymbol
                                                     )}
                                                 </td>
-                                                <td className="px-4 py-2.5 text-right font-medium text-emerald-400">
+                                                <td className="px-3 py-2 text-right">
                                                     {formatCurrency(
                                                         record.balanceAfter,
                                                         currencySymbol
@@ -939,51 +874,45 @@ function DashboardTab({
                     </div>
                 </div>
 
-                {/* Right Column - Top Models */}
-                <div className="space-y-6">
-                    <div className="rounded-lg border border-slate-800 bg-slate-900/30">
-                        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-                            <div className="flex items-center gap-2">
-                                <BarChart3 className="h-4 w-4 text-slate-400" />
-                                <h2 className="text-sm font-medium text-white">
-                                    {t('userPortal.account.topModels.title')}
-                                </h2>
-                            </div>
+                {/* Right - Top Models */}
+                <div>
+                    <div className="border">
+                        <div className="flex items-center gap-2 border-b px-3 py-2">
+                            <BarChart3 className="h-3 w-3" />
+                            <h2 className="text-xs font-medium">Top models</h2>
                         </div>
 
-                        {data.topModels.length === 0 ? (
-                            <div className="p-8 text-center text-sm text-slate-500">
+                        {topModels.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-muted-foreground">
                                 {t('userPortal.account.empty')}
                             </div>
                         ) : (
-                            <div className="divide-y divide-slate-800">
-                                {data.topModels.map((model, index) => (
+                            <div className="divide-y">
+                                {topModels.map((model, index) => (
                                     <div
                                         key={model.modelName}
-                                        className="flex items-center justify-between gap-3 px-4 py-3"
+                                        className="flex items-center justify-between gap-2 px-3 py-2"
                                     >
-                                        <div className="flex min-w-0 flex-1 items-center gap-3">
-                                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-800 text-xs font-medium text-slate-400">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-xs text-muted-foreground">
                                                 {index + 1}
                                             </span>
                                             <div className="min-w-0 flex-1">
                                                 <p
-                                                    className="truncate text-sm font-medium text-white"
+                                                    className="truncate text-xs"
                                                     title={model.modelName}
                                                 >
                                                     {model.modelName}
                                                 </p>
-                                                <p className="text-xs text-slate-500">
+                                                <p className="text-xs text-muted-foreground">
                                                     {formatNumber(
                                                         model.totalCalls
                                                     )}{' '}
-                                                    {t(
-                                                        'userPortal.account.topModels.calls'
-                                                    )}
+                                                    calls
                                                 </p>
                                             </div>
                                         </div>
-                                        <span className="shrink-0 text-sm font-medium text-emerald-400">
+                                        <span className="shrink-0 text-xs">
                                             {formatCurrency(
                                                 model.totalCost,
                                                 currencySymbol

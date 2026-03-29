@@ -17,47 +17,262 @@ body {
         sans-serif;
 }
 
-@layer utilities {
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-fade-in {
-        animation: fadeIn 0.6s ease-out forwards;
-    }
-
-    .animate-fade-in-delay {
-        animation: fadeIn 0.6s ease-out 0.2s forwards;
-        opacity: 0;
-    }
-
-    @keyframes slide-up {
-        from {
-            opacity: 0;
-            transform: translateY(1rem);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-slide-up {
-        animation: slide-up 0.3s ease-out;
+@layer base {
+    :root {
+        /* Flat dark theme - default */
+        --background: 220 15% 8%;
+        --foreground: 220 15% 90%;
+        --card: 220 15% 12%;
+        --card-foreground: 220 15% 90%;
+        --popover: 220 15% 12%;
+        --popover-foreground: 220 15% 90%;
+        --primary: 220 15% 55%;
+        --primary-foreground: 220 15% 8%;
+        --secondary: 220 15% 15%;
+        --secondary-foreground: 220 15% 90%;
+        --muted: 220 15% 18%;
+        --muted-foreground: 220 15% 55%;
+        --accent: 220 15% 20%;
+        --accent-foreground: 220 15% 90%;
+        --destructive: 0 60% 45%;
+        --destructive-foreground: 0 0% 95%;
+        --border: 220 15% 18%;
+        --input: 220 15% 15%;
+        --ring: 220 15% 40%;
+        --chart-1: 220 15% 55%;
+        --chart-2: 160 40% 45%;
+        --chart-3: 30 60% 50%;
+        --chart-4: 280 40% 55%;
+        --chart-5: 340 50% 55%;
+        --radius: 0.25rem;
+        --sidebar-background: 220 15% 10%;
+        --sidebar-foreground: 220 15% 80%;
+        --sidebar-primary: 220 15% 55%;
+        --sidebar-primary-foreground: 220 15% 8%;
+        --sidebar-accent: 220 15% 15%;
+        --sidebar-accent-foreground: 220 15% 90%;
+        --sidebar-border: 220 15% 18%;
+        --sidebar-ring: 220 15% 40%;
     }
 }
 
+@layer base {
+    * {
+        border-color: hsl(var(--border));
+    }
+    body {
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+    }
+}
+
+/* Minimal animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Subtle dot pattern */
+.bg-dot-pattern {
+    background-image: radial-gradient(
+        circle at center,
+        hsl(var(--foreground) / 0.05) 1px,
+        transparent 1px
+    );
+    background-size: 20px 20px;
+}
+
+/* Admin theme - flatter */
+.admin-dark-theme {
+    --background: 220 15% 8%;
+    --foreground: 220 15% 90%;
+    --card: 220 15% 12%;
+    --card-foreground: 220 15% 90%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 220 15% 90%;
+    --primary: 220 15% 55%;
+    --primary-foreground: 220 15% 8%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 220 15% 90%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 220 15% 50%;
+    --accent: 220 15% 20%;
+    --accent-foreground: 220 15% 90%;
+    --destructive: 0 60% 45%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 220 15% 18%;
+    --input: 220 15% 15%;
+    --ring: 220 15% 40%;
+
+    color: hsl(var(--foreground));
+}
+
+/* Ant Design overrides - minimal */
+.admin-dark-theme .ant-table {
+    background: transparent !important;
+    color: hsl(var(--foreground)) !important;
+}
+
+.admin-dark-theme .ant-table-container {
+    border-color: hsl(220 15% 18%) !important;
+}
+
+.admin-dark-theme .ant-table-thead > tr > th,
+.admin-dark-theme .ant-table-thead > tr > td {
+    background: hsl(220 15% 15%) !important;
+    color: hsl(220 15% 55%) !important;
+    border-bottom-color: hsl(220 15% 18%) !important;
+    font-weight: 500;
+}
+
+.admin-dark-theme .ant-table-tbody > tr > td {
+    background: transparent !important;
+    color: hsl(220 15% 85%) !important;
+    border-bottom-color: hsl(220 15% 15%) !important;
+}
+
+.admin-dark-theme .ant-table-tbody > tr:hover > td {
+    background: hsl(220 15% 18%) !important;
+}
+
+.admin-dark-theme .ant-table-cell-row-hover {
+    background: hsl(220 15% 18%) !important;
+}
+
+/* Pagination */
+.admin-dark-theme .ant-pagination {
+    color: hsl(220 15% 50%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item {
+    background: transparent !important;
+    border-color: hsl(220 15% 18%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item a {
+    color: hsl(220 15% 50%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item-active {
+    background: hsl(220 15% 20%) !important;
+    border-color: hsl(220 15% 40%) !important;
+}
+
+.admin-dark-theme .ant-pagination-item-active a {
+    color: hsl(220 15% 70%) !important;
+}
+
+.admin-dark-theme .ant-pagination-prev button,
+.admin-dark-theme .ant-pagination-next button {
+    color: hsl(220 15% 50%) !important;
+}
+
+.admin-dark-theme .ant-pagination-disabled button {
+    color: hsl(220 15% 25%) !important;
+}
+
+.admin-dark-theme .ant-pagination-total-text {
+    color: hsl(220 15% 50%) !important;
+}
+
+/* Input */
+.admin-dark-theme .ant-input,
+.admin-dark-theme .ant-input-affix-wrapper {
+    background: hsl(220 15% 12%) !important;
+    border-color: hsl(220 15% 18%) !important;
+    color: hsl(220 15% 85%) !important;
+}
+
+.admin-dark-theme .ant-input::placeholder {
+    color: hsl(220 15% 40%) !important;
+}
+
+.admin-dark-theme .ant-input:focus,
+.admin-dark-theme .ant-input-affix-wrapper:focus,
+.admin-dark-theme .ant-input-affix-wrapper-focused {
+    border-color: hsl(220 15% 40%) !important;
+    box-shadow: none !important;
+}
+
+/* Switch */
+.admin-dark-theme .ant-switch {
+    background: hsl(220 15% 25%) !important;
+}
+
+.admin-dark-theme .ant-switch-checked {
+    background: hsl(220 15% 45%) !important;
+}
+
+/* Progress */
+.admin-dark-theme .ant-progress-text {
+    color: hsl(220 15% 50%) !important;
+}
+
+/* DatePicker */
+.admin-dark-theme .ant-picker {
+    background: hsl(220 15% 12%) !important;
+    border-color: hsl(220 15% 18%) !important;
+    color: hsl(220 15% 85%) !important;
+}
+
+.admin-dark-theme .ant-picker input {
+    color: hsl(220 15% 85%) !important;
+}
+
+.admin-dark-theme .ant-picker:hover {
+    border-color: hsl(220 15% 40%) !important;
+}
+
+.admin-dark-theme .ant-picker-separator,
+.admin-dark-theme .ant-picker-suffix {
+    color: hsl(220 15% 40%) !important;
+}
+
+/* Tooltip */
+.admin-dark-theme .ant-tooltip-inner {
+    background: hsl(220 15% 15%) !important;
+    color: hsl(220 15% 85%) !important;
+}
+
+/* Spin (loading) */
+.admin-dark-theme .ant-spin-dot-item {
+    background-color: hsl(220 15% 50%) !important;
+}
+
+/* Table loading overlay */
+.admin-dark-theme .ant-spin-container::after {
+    background: hsl(220 15% 8% / 0.4) !important;
+}
+
+/* Message */
+.admin-dark-theme .ant-message-notice-content {
+    background: hsl(220 15% 15%) !important;
+    color: hsl(220 15% 85%) !important;
+}
+
+/* Dropdown / popover filter menus */
+.ant-table-filter-dropdown {
+    background: hsl(220 15% 12%) !important;
+    border: 1px solid hsl(220 15% 18%) !important;
+    border-radius: 0.25rem;
+    box-shadow: none !important;
+}
+
+/* Ant modal overrides - flat */
 .custom-modal .ant-modal-content {
     padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    border-radius: 0.25rem;
+    box-shadow: none;
+    background: hsl(220 15% 12%);
+    border: 1px solid hsl(220 15% 18%);
 }
 
 .custom-modal .ant-modal-header {
@@ -75,182 +290,14 @@ body {
 }
 
 .custom-modal .ant-btn {
-    height: 40px;
-    border-radius: 8px;
+    height: 36px;
+    border-radius: 0.25rem;
 }
 
-.custom-tooltip-simple .ant-tooltip-inner {
-    padding: 0;
-    border-radius: 8px;
-    min-width: 120px;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.custom-tooltip-simple .ant-tooltip-arrow {
-    display: none;
-}
-
-.update-modal .ant-modal-content {
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-}
-
-.update-modal .ant-modal-footer {
-    margin-top: 24px;
-    border-top: none;
-    padding: 0;
-}
-
-.update-modal .ant-modal-footer .ant-btn {
-    height: 38px;
-    padding: 0 24px;
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-.update-modal .ant-modal-footer .ant-btn-primary {
-    background: rgb(59 130 246);
-    border-color: rgb(59 130 246);
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
-}
-
-.update-modal .ant-modal-footer .ant-btn-primary:hover {
-    background: rgb(37 99 235);
-    border-color: rgb(37 99 235);
-}
-
-.update-modal .ant-modal-footer .ant-btn-default {
-    border-color: #e5e7eb;
-    color: #6b7280;
-}
-
-.update-modal .ant-modal-footer .ant-btn-default:hover {
-    border-color: #d1d5db;
-    color: #4b5563;
-    background: #f9fafb;
-}
-
-@layer base {
-    :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 240 4.8% 95.9%;
-        --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
-        --input: 240 5.9% 90%;
-        --ring: 240 10% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0.5rem;
-        --sidebar-background: 0 0% 98%;
-        --sidebar-foreground: 240 5.3% 26.1%;
-        --sidebar-primary: 240 5.9% 10%;
-        --sidebar-primary-foreground: 0 0% 98%;
-        --sidebar-accent: 240 4.8% 95.9%;
-        --sidebar-accent-foreground: 240 5.9% 10%;
-        --sidebar-border: 220 13% 91%;
-        --sidebar-ring: 217.2 91.2% 59.8%;
-    }
-    .dark {
-        --background: 240 10% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 240 10% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 240 10% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 240 5.9% 10%;
-        --secondary: 240 3.7% 15.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 240 3.7% 15.9%;
-        --muted-foreground: 240 5% 64.9%;
-        --accent: 240 3.7% 15.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 3.7% 15.9%;
-        --input: 240 3.7% 15.9%;
-        --ring: 240 4.9% 83.9%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
-        --sidebar-background: 240 5.9% 10%;
-        --sidebar-foreground: 240 4.8% 95.9%;
-        --sidebar-primary: 224.3 76.3% 48%;
-        --sidebar-primary-foreground: 0 0% 100%;
-        --sidebar-accent: 240 3.7% 15.9%;
-        --sidebar-accent-foreground: 240 4.8% 95.9%;
-        --sidebar-border: 240 3.7% 15.9%;
-        --sidebar-ring: 217.2 91.2% 59.8%;
-    }
-}
-
-@layer base {
-    * {
-        border-color: hsl(var(--border));
-    }
-    body {
-        background-color: hsl(var(--background));
-        color: hsl(var(--foreground));
-    }
-}
-
-.bg-dot-pattern {
-    background-image: radial-gradient(
-        circle at center,
-        hsl(var(--foreground) / 0.1) 1px,
-        transparent 1px
-    );
-    background-size: 24px 24px;
-}
-
-.bg-dot-pattern-dark {
-    background-image: radial-gradient(
-        circle at center,
-        hsl(var(--foreground) / 0.2) 1px,
-        transparent 1px
-    );
-    background-size: 24px 24px;
-}
-
-@media (max-width: 640px) {
-    .toaster-group {
-        --viewport-padding: 16px;
-        right: var(--viewport-padding);
-        left: var(--viewport-padding);
-        width: calc(100% - var(--viewport-padding) * 2);
-    }
-
-    .toast {
-        --viewport-padding: 16px;
-        width: 100%;
-        border-radius: 12px;
-        margin-left: 0;
-        margin-right: 0;
-    }
-}
-
+/* Custom date picker - flat */
 .custom-date-picker {
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    border-radius: 0.25rem;
+    box-shadow: none;
     border: 1px solid hsl(var(--border));
     background-color: hsl(var(--background));
 }
@@ -284,274 +331,112 @@ body {
     border-top: 1px solid hsl(var(--border));
 }
 
-/* ─── Admin Dark Theme Overrides ──────────────────────────────────────────── */
-/* Applied when admin panels render inside the unified account page */
-
-.admin-dark-theme {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 7%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 160 84% 39%;
-    --primary-foreground: 222 47% 4%;
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 215 20% 55%;
-    --accent: 215 28% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 160 84% 39%;
-
-    color: hsl(var(--foreground));
+/* Update modal - flat */
+.update-modal .ant-modal-content {
+    padding: 24px;
+    border-radius: 0.25rem;
+    box-shadow: none;
+    background: hsl(220 15% 12%);
+    border: 1px solid hsl(220 15% 18%);
 }
 
-/* Ant Design Table */
-.admin-dark-theme .ant-table {
-    background: transparent !important;
-    color: hsl(var(--foreground)) !important;
+.update-modal .ant-modal-footer {
+    margin-top: 24px;
+    border-top: none;
+    padding: 0;
 }
 
-.admin-dark-theme .ant-table-container {
-    border-color: hsl(215 28% 17%) !important;
-}
-
-.admin-dark-theme .ant-table-thead > tr > th,
-.admin-dark-theme .ant-table-thead > tr > td {
-    background: hsl(222 47% 9%) !important;
-    color: hsl(215 20% 55%) !important;
-    border-bottom-color: hsl(215 28% 17%) !important;
+.update-modal .ant-modal-footer .ant-btn {
+    height: 36px;
+    padding: 0 20px;
+    border-radius: 0.25rem;
     font-weight: 500;
 }
 
-.admin-dark-theme .ant-table-tbody > tr > td {
-    background: transparent !important;
-    color: hsl(210 40% 88%) !important;
-    border-bottom-color: hsl(215 28% 14%) !important;
+.update-modal .ant-modal-footer .ant-btn-primary {
+    background: hsl(220 15% 35%);
+    border-color: hsl(220 15% 35%);
 }
 
-.admin-dark-theme .ant-table-tbody > tr:hover > td {
-    background: hsl(215 28% 12%) !important;
+.update-modal .ant-modal-footer .ant-btn-primary:hover {
+    background: hsl(220 15% 40%);
+    border-color: hsl(220 15% 40%);
 }
 
-.admin-dark-theme .ant-table-tbody > tr.ant-table-row:hover > td {
-    background: hsl(215 28% 12%) !important;
+.update-modal .ant-modal-footer .ant-btn-default {
+    border-color: hsl(220 15% 20%);
+    color: hsl(220 15% 60%);
 }
 
-.admin-dark-theme .ant-table-cell-row-hover {
-    background: hsl(215 28% 12%) !important;
+.update-modal .ant-modal-footer .ant-btn-default:hover {
+    border-color: hsl(220 15% 25%);
+    color: hsl(220 15% 70%);
+    background: hsl(220 15% 15%);
 }
 
-/* Table pagination */
-.admin-dark-theme .ant-pagination {
-    color: hsl(215 20% 55%) !important;
+/* Tooltip simple */
+.custom-tooltip-simple .ant-tooltip-inner {
+    padding: 0;
+    border-radius: 0.25rem;
+    min-width: 120px;
+    border: 1px solid hsl(220 15% 20%);
 }
 
-.admin-dark-theme .ant-pagination-item {
-    background: transparent !important;
-    border-color: hsl(215 28% 17%) !important;
+.custom-tooltip-simple .ant-tooltip-arrow {
+    display: none;
 }
 
-.admin-dark-theme .ant-pagination-item a {
-    color: hsl(215 20% 55%) !important;
+/* Mobile responsive */
+@media (max-width: 640px) {
+    .toaster-group {
+        --viewport-padding: 16px;
+        right: var(--viewport-padding);
+        left: var(--viewport-padding);
+        width: calc(100% - var(--viewport-padding) * 2);
+    }
+
+    .toast {
+        --viewport-padding: 16px;
+        width: 100%;
+        border-radius: 0.25rem;
+        margin-left: 0;
+        margin-right: 0;
+    }
 }
 
-.admin-dark-theme .ant-pagination-item-active {
-    background: hsl(160 84% 39% / 0.15) !important;
-    border-color: hsl(160 84% 39%) !important;
+/* recharts - flat */
+.admin-dark-theme .recharts-cartesian-axis-tick-value {
+    fill: hsl(220 15% 45%) !important;
 }
 
-.admin-dark-theme .ant-pagination-item-active a {
-    color: hsl(160 84% 45%) !important;
+.admin-dark-theme .recharts-legend-item-text {
+    color: hsl(220 15% 55%) !important;
 }
 
-.admin-dark-theme .ant-pagination-prev button,
-.admin-dark-theme .ant-pagination-next button {
-    color: hsl(215 20% 55%) !important;
-}
-
-.admin-dark-theme .ant-pagination-disabled button {
-    color: hsl(215 28% 25%) !important;
-}
-
-.admin-dark-theme .ant-pagination-total-text {
-    color: hsl(215 20% 55%) !important;
-}
-
-/* Table empty state */
+/* Empty state */
 .admin-dark-theme .ant-empty-description {
-    color: hsl(215 20% 45%) !important;
+    color: hsl(220 15% 40%) !important;
 }
 
 /* Table sort icons */
 .admin-dark-theme .ant-table-column-sorter {
-    color: hsl(215 20% 40%) !important;
+    color: hsl(220 15% 35%) !important;
 }
 
 .admin-dark-theme .ant-table-column-sorter-up.active,
 .admin-dark-theme .ant-table-column-sorter-down.active {
-    color: hsl(160 84% 45%) !important;
+    color: hsl(220 15% 55%) !important;
 }
 
 /* Table filter */
 .admin-dark-theme .ant-table-filter-trigger {
-    color: hsl(215 20% 45%) !important;
+    color: hsl(220 15% 40%) !important;
 }
 
 .admin-dark-theme .ant-table-filter-trigger:hover {
-    color: hsl(210 40% 80%) !important;
+    color: hsl(220 15% 70%) !important;
 }
 
 .admin-dark-theme .ant-table-filter-trigger.active {
-    color: hsl(160 84% 45%) !important;
+    color: hsl(220 15% 55%) !important;
 }
-
-/* Dropdown / popover filter menus — these are portaled to body */
-.ant-table-filter-dropdown {
-    background: hsl(222 47% 9%) !important;
-    border: 1px solid hsl(215 28% 17%) !important;
-    border-radius: 0.5rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Input */
-.admin-dark-theme .ant-input,
-.admin-dark-theme .ant-input-affix-wrapper {
-    background: hsl(222 47% 7%) !important;
-    border-color: hsl(215 28% 17%) !important;
-    color: hsl(210 40% 88%) !important;
-}
-
-.admin-dark-theme .ant-input::placeholder {
-    color: hsl(215 20% 40%) !important;
-}
-
-.admin-dark-theme .ant-input:focus,
-.admin-dark-theme .ant-input-affix-wrapper:focus,
-.admin-dark-theme .ant-input-affix-wrapper-focused {
-    border-color: hsl(160 84% 39%) !important;
-    box-shadow: 0 0 0 2px hsl(160 84% 39% / 0.1) !important;
-}
-
-/* Switch */
-.admin-dark-theme .ant-switch {
-    background: hsl(215 28% 25%) !important;
-}
-
-.admin-dark-theme .ant-switch-checked {
-    background: hsl(160 84% 39%) !important;
-}
-
-/* Progress */
-.admin-dark-theme .ant-progress-text {
-    color: hsl(215 20% 55%) !important;
-}
-
-/* DatePicker */
-.admin-dark-theme .ant-picker {
-    background: hsl(222 47% 7%) !important;
-    border-color: hsl(215 28% 17%) !important;
-    color: hsl(210 40% 88%) !important;
-}
-
-.admin-dark-theme .ant-picker input {
-    color: hsl(210 40% 88%) !important;
-}
-
-.admin-dark-theme .ant-picker:hover {
-    border-color: hsl(160 84% 39%) !important;
-}
-
-.admin-dark-theme .ant-picker-separator,
-.admin-dark-theme .ant-picker-suffix {
-    color: hsl(215 20% 40%) !important;
-}
-
-/* Tooltip */
-.admin-dark-theme .ant-tooltip-inner {
-    background: hsl(222 47% 12%) !important;
-    color: hsl(210 40% 88%) !important;
-}
-
-/* Spin (loading) */
-.admin-dark-theme .ant-spin-dot-item {
-    background-color: hsl(160 84% 45%) !important;
-}
-
-/* Table loading overlay */
-.admin-dark-theme .ant-spin-container::after {
-    background: hsl(222 47% 4% / 0.4) !important;
-}
-
-/* Message */
-.admin-dark-theme .ant-message-notice-content {
-    background: hsl(222 47% 12%) !important;
-    color: hsl(210 40% 88%) !important;
-}
-
-/* Card overrides for shadcn cards inside dark wrapper */
-.admin-dark-theme [class*="bg-card"] {
-    background-color: hsl(var(--card)) !important;
-}
-
-.admin-dark-theme [class*="border-border"] {
-    border-color: hsl(var(--border)) !important;
-}
-
-.admin-dark-theme [class*="text-foreground"],
-.admin-dark-theme h1,
-.admin-dark-theme h2,
-.admin-dark-theme h3 {
-    color: hsl(var(--foreground)) !important;
-}
-
-.admin-dark-theme [class*="text-muted-foreground"] {
-    color: hsl(var(--muted-foreground)) !important;
-}
-
-.admin-dark-theme [class*="text-primary"] {
-    color: hsl(160 84% 45%) !important;
-}
-
-.admin-dark-theme [class*="bg-primary\\/10"] {
-    background-color: hsl(160 84% 39% / 0.1) !important;
-}
-
-/* Button overrides for dark bg */
-.admin-dark-theme .bg-white,
-.admin-dark-theme [class*="bg-white"] {
-    background-color: hsl(222 47% 12%) !important;
-}
-
-.admin-dark-theme [class*="hover\\:bg-gray-50"]:hover {
-    background-color: hsl(222 47% 15%) !important;
-}
-
-.admin-dark-theme [class*="text-zinc-800"] {
-    color: hsl(210 40% 88%) !important;
-}
-
-.admin-dark-theme [class*="border-zinc-200"] {
-    border-color: hsl(215 28% 20%) !important;
-}
-
-/* Fix for chart cards */
-.admin-dark-theme [class*="bg-gradient-to-br"],
-.admin-dark-theme [class*="bg-card"] {
-    color: hsl(var(--foreground));
-}
-
-/* recharts */
-.admin-dark-theme .recharts-cartesian-axis-tick-value {
-    fill: hsl(215 20% 50%) !important;
-}
-
-.admin-dark-theme .recharts-legend-item-text {
-    color: hsl(215 20% 60%) !important;
-}
-

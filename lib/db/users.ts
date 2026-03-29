@@ -526,3 +526,104 @@ export async function getUserPortalStats(
         })),
     }
 }
+
+export async function getUserPortalStatsForTimeRange(
+    userId: string,
+    days?: number
+): Promise<{
+    totalCalls: number
+    totalTokens: number
+    totalCost: number
+    averageCost: number
+    topModels: Array<{
+        modelName: string
+        totalCost: number
+        totalCalls: number
+    }>
+    recentRecords: Array<{
+        id: number
+        useTime: string
+        modelName: string
+        totalTokens: number
+        cost: number
+        balanceAfter: number
+    }>
+}> {
+    await ensureUserTableExists()
+
+    const timeCondition = days
+        ? `AND use_time >= NOW() - INTERVAL '${days} days'`
+        : ''
+
+    const [statsResult, topModelsResult, recordsResult] = await Promise.all([
+        query(
+            `
+          SELECT
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
+          FROM user_usage_records
+          WHERE user_id = $1
+          ${timeCondition}
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            model_name,
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COUNT(*) AS total_calls
+          FROM user_usage_records
+          WHERE user_id = $1
+          ${timeCondition}
+          GROUP BY model_name
+          ORDER BY total_cost DESC, total_calls DESC
+          LIMIT 5
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            id,
+            use_time,
+            model_name,
+            input_tokens,
+            output_tokens,
+            cost,
+            balance_after
+          FROM user_usage_records
+          WHERE user_id = $1
+          ${timeCondition}
+          ORDER BY use_time DESC
+          LIMIT 10
+        `,
+            [userId]
+        ),
+    ])
+
+    const stats = statsResult.rows[0]
+    const totalCalls = parseInt(stats.total_calls || '0')
+    const totalCost = parseFloat(stats.total_cost || '0')
+
+    return {
+        totalCalls,
+        totalTokens: parseInt(stats.total_tokens || '0'),
+        totalCost,
+        averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
+        topModels: topModelsResult.rows.map((row) => ({
+            modelName: row.model_name,
+            totalCost: parseFloat(row.total_cost),
+            totalCalls: parseInt(row.total_calls),
+        })),
+        recentRecords: recordsResult.rows.map((row) => ({
+            id: row.id,
+            useTime: row.use_time,
+            modelName: row.model_name,
+            totalTokens: row.input_tokens + row.output_tokens,
+            cost: parseFloat(row.cost),
+            balanceAfter: parseFloat(row.balance_after),
+        })),
+    }
+}

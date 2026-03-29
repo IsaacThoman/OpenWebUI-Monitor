@@ -13,14 +13,7 @@ import ModelDistributionChart from '@/components/panel/ModelDistributionChart'
 import UserRankingChart from '@/components/panel/UserRankingChart'
 import UsageRecordsTable from '@/components/panel/UsageRecordsTable'
 import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
-import { toast, Toaster } from 'sonner'
-import { Card } from '@/components/ui/card'
-import {
-    BarChartOutlined,
-    PieChartOutlined,
-    TableOutlined,
-} from '@ant-design/icons'
+import { BarChartOutlined, TableOutlined } from '@ant-design/icons'
 import { Crown, Trophy } from 'lucide-react'
 
 interface ModelUsage {
@@ -295,264 +288,206 @@ export default function AnalyticsPanel() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <TimeRangeSelector
-                    timeRange={dateRange}
-                    timeRangeType={timeRangeType}
-                    availableTimeRange={availableTimeRange}
-                    onTimeRangeChange={handleTimeRangeChange}
-                />
+                timeRange={dateRange}
+                timeRangeType={timeRangeType}
+                availableTimeRange={availableTimeRange}
+                onTimeRangeChange={handleTimeRangeChange}
+            />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="col-span-full bg-gradient-to-br from-card to-card/95 text-card-foreground rounded-xl border shadow-sm overflow-hidden"
-                    >
-                        <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 pointer-events-none" />
-
-                            <div className="relative p-6 space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-xl shrink-0">
-                                        <BarChartOutlined className="text-xl text-primary" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-2xl font-semibold bg-gradient-to-br from-foreground to-foreground/80 bg-clip-text text-transparent">
-                                            {getReportTitle(timeRangeType, t)}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            {renderDateRangeLabel()}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-                                    <div className="col-span-2 md:col-span-1 space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            {t('panel.overview.totalCost')}
-                                        </p>
-                                        <p className="text-2xl font-bold text-primary">
-                                            {loading
-                                                ? '-'
-                                                : `${t('common.currency')}${usageData.models
-                                                      .reduce(
-                                                          (sum, model) =>
-                                                              sum +
-                                                              model.total_cost,
-                                                          0
-                                                      )
-                                                      .toFixed(2)}`}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            {t('panel.overview.totalCalls')}
-                                        </p>
-                                        <p className="text-2xl font-bold text-emerald-600">
-                                            {loading
-                                                ? '-'
-                                                : formatNumber(
-                                                      usageData.stats
-                                                          ?.totalCalls || 0
-                                                  )}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            {t('panel.overview.totalTokens')}
-                                        </p>
-                                        <p className="text-2xl font-bold text-emerald-600">
-                                            {loading
-                                                ? '-'
-                                                : formatNumber(
-                                                      usageData.stats
-                                                          ?.totalTokens || 0
-                                                  )}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            {t('panel.overview.totalUsers')}
-                                        </p>
-                                        <p className="text-2xl font-bold text-amber-600">
-                                            {loading
-                                                ? '-'
-                                                : usageData.users.length}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">
-                                            {t('panel.overview.totalModels')}
-                                        </p>
-                                        <p className="text-2xl font-bold text-violet-600">
-                                            {loading
-                                                ? '-'
-                                                : usageData.models.length}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                            <Crown className="w-4 h-4 text-amber-500" />
-                                            <h4 className="font-medium">
-                                                {t(
-                                                    'panel.report.mostUsedModel'
-                                                )}
-                                            </h4>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-lg font-medium">
-                                                {loading
-                                                    ? '-'
-                                                    : usageData.models.length >
-                                                        0
-                                                      ? usageData.models.reduce(
-                                                            (prev, current) =>
-                                                                current.total_count >
-                                                                prev.total_count
-                                                                    ? current
-                                                                    : prev
-                                                        ).model_name
-                                                      : '-'}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {loading
-                                                    ? '-'
-                                                    : usageData.models.length >
-                                                        0
-                                                      ? t(
-                                                            'panel.report.usageCount',
-                                                            {
-                                                                count: usageData.models.reduce(
-                                                                    (
-                                                                        prev,
-                                                                        current
-                                                                    ) =>
-                                                                        current.total_count >
-                                                                        prev.total_count
-                                                                            ? current
-                                                                            : prev
-                                                                ).total_count,
-                                                            }
-                                                        )
-                                                      : '-'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                            <Trophy className="w-4 h-4 text-rose-500" />
-                                            <h4 className="font-medium">
-                                                {t('panel.report.topUser')}
-                                            </h4>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-lg font-medium">
-                                                {loading
-                                                    ? '-'
-                                                    : usageData.users.length > 0
-                                                      ? usageData.users.reduce(
-                                                            (prev, current) =>
-                                                                current.total_cost >
-                                                                prev.total_cost
-                                                                    ? current
-                                                                    : prev
-                                                        ).nickname
-                                                      : '-'}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {loading
-                                                    ? '-'
-                                                    : usageData.users.length > 0
-                                                      ? t(
-                                                            'panel.report.spentAmount',
-                                                            {
-                                                                amount: usageData.users
-                                                                    .reduce(
-                                                                        (
-                                                                            prev,
-                                                                            current
-                                                                        ) =>
-                                                                            current.total_cost >
-                                                                            prev.total_cost
-                                                                                ? current
-                                                                                : prev
-                                                                    )
-                                                                    .total_cost.toFixed(
-                                                                        2
-                                                                    ),
-                                                            }
-                                                        )
-                                                      : '-'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="col-span-full border p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <BarChartOutlined className="text-sm" />
+                        <div>
+                            <h3 className="text-sm font-medium">
+                                {getReportTitle(timeRangeType, t)}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                {renderDateRangeLabel()}
+                            </p>
                         </div>
-                    </motion.div>
-                </div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="py-6 bg-card text-card-foreground"
-                >
-                    <ModelDistributionChart
-                        loading={loading}
-                        models={usageData.models}
-                        metric={pieMetric}
-                        onMetricChange={setPieMetric}
-                    />
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="py-6 bg-card text-card-foreground"
-                >
-                    <UserRankingChart
-                        loading={loading}
-                        users={usageData.users}
-                        metric={barMetric}
-                        onMetricChange={setBarMetric}
-                    />
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="py-6 bg-card text-card-foreground"
-                >
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                                <TableOutlined className="text-primary" />
-                                {t('panel.usageDetails.title')}
-                            </h2>
-                        </div>
-                        <UsageRecordsTable
-                            loading={tableLoading}
-                            records={records}
-                            tableParams={tableParams}
-                            models={usageData.models}
-                            users={usageData.users}
-                            onTableChange={handleTableChange}
-                        />
                     </div>
-            </motion.div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('panel.overview.totalCost')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {loading
+                                    ? '-'
+                                    : `${t('common.currency')}${usageData.models
+                                          .reduce(
+                                              (sum, model) =>
+                                                  sum + model.total_cost,
+                                              0
+                                          )
+                                          .toFixed(2)}`}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('panel.overview.totalCalls')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {loading
+                                    ? '-'
+                                    : formatNumber(
+                                          usageData.stats?.totalCalls || 0
+                                      )}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('panel.overview.totalTokens')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {loading
+                                    ? '-'
+                                    : formatNumber(
+                                          usageData.stats?.totalTokens || 0
+                                      )}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('panel.overview.totalUsers')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {loading ? '-' : usageData.users.length}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('panel.overview.totalModels')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {loading ? '-' : usageData.models.length}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 mt-4 border-t">
+                        <div>
+                            <div className="flex items-center gap-1 mb-1">
+                                <Crown className="h-3 w-3" />
+                                <h4 className="text-xs font-medium">
+                                    {t('panel.report.mostUsedModel')}
+                                </h4>
+                            </div>
+                            <p className="text-sm">
+                                {loading
+                                    ? '-'
+                                    : usageData.models.length > 0
+                                      ? usageData.models.reduce(
+                                            (prev, current) =>
+                                                current.total_count >
+                                                prev.total_count
+                                                    ? current
+                                                    : prev
+                                        ).model_name
+                                      : '-'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                {loading
+                                    ? '-'
+                                    : usageData.models.length > 0
+                                      ? t('panel.report.usageCount', {
+                                            count: usageData.models.reduce(
+                                                (prev, current) =>
+                                                    current.total_count >
+                                                    prev.total_count
+                                                        ? current
+                                                        : prev
+                                            ).total_count,
+                                        })
+                                      : '-'}
+                            </p>
+                        </div>
+
+                        <div>
+                            <div className="flex items-center gap-1 mb-1">
+                                <Trophy className="h-3 w-3" />
+                                <h4 className="text-xs font-medium">
+                                    {t('panel.report.topUser')}
+                                </h4>
+                            </div>
+                            <p className="text-sm">
+                                {loading
+                                    ? '-'
+                                    : usageData.users.length > 0
+                                      ? usageData.users.reduce(
+                                            (prev, current) =>
+                                                current.total_cost >
+                                                prev.total_cost
+                                                    ? current
+                                                    : prev
+                                        ).nickname
+                                      : '-'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                {loading
+                                    ? '-'
+                                    : usageData.users.length > 0
+                                      ? t('panel.report.spentAmount', {
+                                            amount: usageData.users
+                                                .reduce((prev, current) =>
+                                                    current.total_cost >
+                                                    prev.total_cost
+                                                        ? current
+                                                        : prev
+                                                )
+                                                .total_cost.toFixed(2),
+                                        })
+                                      : '-'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="py-4">
+                <ModelDistributionChart
+                    loading={loading}
+                    models={usageData.models}
+                    metric={pieMetric}
+                    onMetricChange={setPieMetric}
+                />
+            </div>
+
+            <div className="py-4">
+                <UserRankingChart
+                    loading={loading}
+                    users={usageData.users}
+                    metric={barMetric}
+                    onMetricChange={setBarMetric}
+                />
+            </div>
+
+            <div className="py-4">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-medium flex items-center gap-2">
+                            <TableOutlined />
+                            {t('panel.usageDetails.title')}
+                        </h2>
+                    </div>
+                    <UsageRecordsTable
+                        loading={tableLoading}
+                        records={records}
+                        tableParams={tableParams}
+                        models={usageData.models}
+                        users={usageData.users}
+                        onTableChange={handleTableChange}
+                    />
+                </div>
+            </div>
         </div>
     )
 }
