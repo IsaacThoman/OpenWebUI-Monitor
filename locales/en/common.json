@@ -350,7 +350,6 @@
             "description": "Enter the secure stats link or access token you were given.",
             "label": "Stats link or token",
             "placeholder": "Paste a full link or token",
-            "help": "Your admin can generate a personal stats link for you. Pasting the full link works too.",
             "submit": "Sign in",
             "submitting": "Signing in...",
             "required": "Enter your stats link or token",

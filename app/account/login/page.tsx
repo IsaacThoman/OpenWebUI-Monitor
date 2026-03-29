@@ -166,10 +166,6 @@ export default function AccountLoginPage() {
                                 t('userPortal.login.submit')
                             )}
                         </Button>
-
-                        <p className="text-xs leading-5 text-slate-400">
-                            {t('userPortal.login.help')}
-                        </p>
                     </form>
                 </CardContent>
             </Card>

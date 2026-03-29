@@ -353,7 +353,6 @@
             "description": "Ingresa el enlace seguro de estadísticas o el token de acceso que recibiste.",
             "label": "Enlace o token de estadísticas",
             "placeholder": "Pega un enlace completo o un token",
-            "help": "Tu administrador puede generar un enlace personal de estadísticas para ti. También puedes pegar el enlace completo.",
             "submit": "Iniciar sesión",
             "submitting": "Iniciando sesión...",
             "required": "Ingresa tu enlace o token de estadísticas",
