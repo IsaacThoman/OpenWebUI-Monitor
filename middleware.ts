@@ -1,7 +1,94 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+import { USER_PORTAL_COOKIE } from '@/lib/user-portal-constants'
+
 const API_KEY = process.env.API_KEY
+const ADMIN_PAGE_PATHS = new Set(['/models', '/panel', '/records', '/users'])
+const ADMIN_PAGE_PREFIXES = [
+    '/account/analytics',
+    '/account/models',
+    '/account/users',
+]
+
+interface UserPortalSession {
+    role: string
+}
+
+interface UserPortalMeResponse {
+    success: boolean
+    data?: {
+        profile?: {
+            role?: string
+        }
+    }
+}
+
+function setNoCacheHeaders(response: NextResponse): NextResponse {
+    response.headers.set(
+        'Cache-Control',
+        'no-store, no-cache, must-revalidate, proxy-revalidate'
+    )
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('Expires', '0')
+
+    return response
+}
+
+function isPublicPage(pathname: string): boolean {
+    return (
+        pathname === '/account/login' ||
+        pathname === '/token' ||
+        pathname.startsWith('/u/')
+    )
+}
+
+function isAdminPage(pathname: string): boolean {
+    return (
+        ADMIN_PAGE_PATHS.has(pathname) ||
+        ADMIN_PAGE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+    )
+}
+
+function createLoginRedirect(request: NextRequest): NextResponse {
+    return NextResponse.redirect(new URL('/account/login', request.url))
+}
+
+async function getUserPortalSession(
+    request: NextRequest
+): Promise<UserPortalSession | null> {
+    const token = request.cookies.get(USER_PORTAL_COOKIE)?.value
+
+    if (!token) {
+        return null
+    }
+
+    try {
+        const response = await fetch(new URL('/api/v1/user-portal/me', request.url), {
+            headers: {
+                accept: 'application/json',
+                cookie: request.headers.get('cookie') ?? '',
+            },
+            cache: 'no-store',
+        })
+
+        if (!response.ok) {
+            return null
+        }
+
+        const payload: UserPortalMeResponse = await response.json()
+        const role = payload.data?.profile?.role
+
+        if (!role) {
+            return null
+        }
+
+        return { role }
+    } catch (error) {
+        console.error('[Middleware] Failed to validate user portal session:', error)
+        return null
+    }
+}
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
@@ -59,24 +146,31 @@ export async function middleware(request: NextRequest) {
 
     // Non-API pages
     if (!pathname.startsWith('/api/')) {
-        // Allow login page and account pages through
-        if (
-            pathname === '/token' ||
-            pathname.startsWith('/account') ||
-            pathname.startsWith('/u/')
-        ) {
+        if (isPublicPage(pathname)) {
+            if (pathname === '/account/login') {
+                const session = await getUserPortalSession(request)
+
+                if (session) {
+                    return NextResponse.redirect(
+                        new URL('/account/personal', request.url)
+                    )
+                }
+            }
+
             return NextResponse.next()
         }
 
-        const response = NextResponse.next()
-        response.headers.set(
-            'Cache-Control',
-            'no-store, no-cache, must-revalidate, proxy-revalidate'
-        )
-        response.headers.set('Pragma', 'no-cache')
-        response.headers.set('Expires', '0')
+        const session = await getUserPortalSession(request)
 
-        return response
+        if (!session) {
+            return createLoginRedirect(request)
+        }
+
+        if (isAdminPage(pathname) && session.role !== 'admin') {
+            return NextResponse.redirect(new URL('/account/personal', request.url))
+        }
+
+        return setNoCacheHeaders(NextResponse.next())
     }
 
     // Other API routes (config/key, init, etc.)
