@@ -4,8 +4,26 @@ import { useState } from 'react'
 import { Table, TablePaginationConfig, Select } from 'antd'
 import type { FilterValue } from 'antd/es/table/interface'
 import type { SorterResult } from 'antd/es/table/interface'
-import dayjs from '@/lib/dayjs'
 import { useTranslation } from 'react-i18next'
+
+const LOCALE_MAP: Record<string, string> = {
+    en: 'en-US',
+    zh: 'zh-CN',
+    es: 'es-ES',
+}
+
+const getIntlLocale = (language: string): string =>
+    LOCALE_MAP[language] || LOCALE_MAP.en
+
+const formatUsageTime = (time: string, locale: string): string =>
+    new Intl.DateTimeFormat(locale, {
+        year: '2-digit',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    }).format(new Date(time))
+
 interface UsageRecord {
     id: number
     nickname: string
@@ -40,9 +58,11 @@ interface Props {
 const MobileCard = ({
     record,
     t,
+    locale,
 }: {
     record: UsageRecord
     t: (key: string) => string
+    locale: string
 }) => {
     return (
         <div className="p-4 bg-white rounded-xl border border-gray-100/80 shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-200/80">
@@ -53,7 +73,7 @@ const MobileCard = ({
                     </div>
                     <div className="text-xs text-gray-500 flex items-center gap-1.5">
                         <div className="w-1 h-1 rounded-full bg-gray-300" />
-                        {dayjs(record.use_time).format('YYYY-MM-DD HH:mm:ss')}
+                        {formatUsageTime(record.use_time, locale)}
                     </div>
                 </div>
                 <div className="text-right">
@@ -81,7 +101,7 @@ const MobileCard = ({
                     <div className="text-sm text-gray-700 font-medium tabular-nums">
                         {(
                             record.input_tokens + record.output_tokens
-                        ).toLocaleString()}
+                        ).toLocaleString(locale)}
                     </div>
                 </div>
             </div>
@@ -97,7 +117,8 @@ export default function UsageRecordsTable({
     users,
     onTableChange,
 }: Props) {
-    const { t } = useTranslation('common')
+    const { t, i18n } = useTranslation('common')
+    const locale = getIntlLocale(i18n.resolvedLanguage || i18n.language)
 
     const [filters, setFilters] = useState<Record<string, FilterValue | null>>(
         tableParams.filters || {}
@@ -132,7 +153,7 @@ export default function UsageRecordsTable({
             key: 'use_time',
             width: 180,
             sorter: true,
-            render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+            render: (time: string) => formatUsageTime(time, locale),
         },
         {
             title: t('panel.usageDetails.table.model'),
@@ -155,7 +176,9 @@ export default function UsageRecordsTable({
             width: 120,
             sorter: true,
             render: (_: unknown, record: UsageRecord) =>
-                (record.input_tokens + record.output_tokens).toLocaleString(),
+                (record.input_tokens + record.output_tokens).toLocaleString(
+                    locale
+                ),
         },
         {
             title: t('panel.usageDetails.table.cost'),
@@ -255,6 +278,7 @@ export default function UsageRecordsTable({
                                     key={record.id}
                                     record={record}
                                     t={t}
+                                    locale={locale}
                                 />
                             ))}
                         </div>
