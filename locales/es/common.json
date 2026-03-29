@@ -199,7 +199,13 @@
             "default": "No hay usuarios para mostrar en este momento.",
             "withFilter": "No se encontraron usuarios que coincidan con \"{{filter}}\"."
         },
-        "loading": "Cargando datos de usuarios..."
+        "loading": "Cargando datos de usuarios...",
+        "viewerLink": {
+            "create": "Crear enlace de estadísticas",
+            "createSuccess": "Enlace de estadísticas copiado al portapapeles",
+            "resetSuccess": "Nuevo enlace copiado. El enlace anterior fue reemplazado",
+            "createError": "Error al crear el enlace de estadísticas"
+        }
     },
 
     "records": {
@@ -339,5 +345,58 @@
         },
         "exceedsMaxValue": "El valor ingresado no puede exceder {{max}}",
         "balanceExceedsLimit": "El saldo excede el límite máximo"
+    },
+
+    "userPortal": {
+        "login": {
+            "title": "Ver tu cuenta",
+            "description": "Ingresa el enlace seguro de estadísticas o el token de acceso que recibiste.",
+            "label": "Enlace o token de estadísticas",
+            "placeholder": "Pega un enlace completo o un token",
+            "help": "Tu administrador puede generar un enlace personal de estadísticas para ti. También puedes pegar el enlace completo.",
+            "submit": "Iniciar sesión",
+            "submitting": "Iniciando sesión...",
+            "required": "Ingresa tu enlace o token de estadísticas",
+            "invalidLink": "Este enlace de estadísticas es inválido o expiró",
+            "missingLink": "Falta el enlace de estadísticas",
+            "failed": "Error al iniciar sesión"
+        },
+        "account": {
+            "badge": "Resumen de cuenta",
+            "logout": "Cerrar sesión",
+            "loading": "Cargando estadísticas de tu cuenta...",
+            "loadFailed": "Error al cargar las estadísticas de la cuenta",
+            "never": "Aún no hay actividad",
+            "empty": "Aún no hay registros de uso.",
+            "cards": {
+                "balance": "Saldo actual",
+                "totalCalls": "Llamadas totales",
+                "totalTokens": "Tokens totales",
+                "lastActive": "Última actividad"
+            },
+            "recentActivity": {
+                "title": "Últimos 30 días",
+                "calls": "Llamadas",
+                "tokens": "Tokens",
+                "cost": "Gasto"
+            },
+            "overview": {
+                "totalSpend": "Gasto acumulado",
+                "averageCost": "Promedio por llamada",
+                "firstUse": "Primer uso"
+            },
+            "topModels": {
+                "title": "Modelos principales",
+                "calls": "llamadas"
+            },
+            "records": {
+                "title": "Uso reciente",
+                "time": "Hora",
+                "model": "Modelo",
+                "tokens": "Tokens",
+                "cost": "Costo",
+                "balanceAfter": "Saldo después"
+            }
+        }
     }
 }

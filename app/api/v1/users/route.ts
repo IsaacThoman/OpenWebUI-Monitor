@@ -41,14 +41,15 @@ export async function GET(req: NextRequest) {
         const total = parseInt(countResult.rows[0].count)
 
         const result = await query(
-            `SELECT id, email, name, role, balance, deleted, created_at 
-       FROM users 
-       ${whereClause} 
-       ${
-           sortField
-               ? `ORDER BY ${sortField} ${sortOrder === 'descend' ? 'DESC' : 'ASC'}`
-               : 'ORDER BY created_at DESC'
-       }
+            `SELECT id, email, name, role, balance, deleted, created_at,
+                viewer_token_hash IS NOT NULL AS has_viewer_token
+        FROM users 
+        ${whereClause} 
+        ${
+            sortField
+                ? `ORDER BY ${sortField} ${sortOrder === 'descend' ? 'DESC' : 'ASC'}`
+                : 'ORDER BY created_at DESC'
+        }
        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
             [...params, pageSize, (page - 1) * pageSize]
         )

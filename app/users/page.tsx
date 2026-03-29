@@ -20,7 +20,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Trash2, Search, X, Unlock, Lock } from 'lucide-react'
+import { Trash2, Search, X, Unlock, Lock, Link2 } from 'lucide-react'
 import { EditableCell } from '@/components/editable-cell'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
@@ -33,6 +33,7 @@ interface User {
     role: string
     balance: number
     deleted: boolean
+    has_viewer_token?: boolean
 }
 
 interface TFunction {
@@ -496,6 +497,53 @@ export default function UsersPage() {
         }
     }
 
+    const handleCreateViewerLink = async (user: User) => {
+        try {
+            const token = localStorage.getItem('access_token')
+            const res = await fetch(`/api/v1/users/${user.id}/viewer-token`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || t('users.viewerLink.createError'))
+            }
+
+            await navigator.clipboard.writeText(data.data.url)
+            toast.success(
+                user.has_viewer_token
+                    ? t('users.viewerLink.resetSuccess')
+                    : t('users.viewerLink.createSuccess')
+            )
+
+            setUsers((prev) =>
+                prev.map((item) =>
+                    item.id === user.id
+                        ? { ...item, has_viewer_token: true }
+                        : item
+                )
+            )
+            setBlacklistUsers((prev) =>
+                prev.map((item) =>
+                    item.id === user.id
+                        ? { ...item, has_viewer_token: true }
+                        : item
+                )
+            )
+        } catch (error) {
+            console.error('Failed to create viewer link:', error)
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('users.viewerLink.createError')
+            )
+        }
+    }
+
     const UserCard = ({ record }: { record: User }) => {
         return (
             <div
@@ -524,6 +572,19 @@ export default function UsersPage() {
                             </p>
                         </div>
                     </div>
+
+                    {!record.deleted && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                handleCreateViewerLink(record)
+                            }}
+                            className="shrink-0 rounded-md p-2 text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                            title={t('users.viewerLink.create')}
+                        >
+                            <Link2 className="w-4 h-4" />
+                        </button>
+                    )}
 
                     <button
                         onClick={(e) => {
@@ -671,15 +732,29 @@ export default function UsersPage() {
             {
                 title: t('users.actions'),
                 key: 'actions',
-                width: '48px',
+                width: '96px',
                 align: 'center',
                 render: (_, record) => (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            setUserToDelete(record)
-                        }}
-                        className={`
+                    <div className="flex items-center justify-center gap-1">
+                        {!record.deleted && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleCreateViewerLink(record)
+                                }}
+                                className="rounded-md p-2 text-muted-foreground/60 transition-colors hover:bg-muted/40 hover:text-muted-foreground"
+                                title={t('users.viewerLink.create')}
+                            >
+                                <Link2 className="w-4 h-4" />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setUserToDelete(record)
+                            }}
+                            className={`
               p-2
               rounded-md
               transition-colors
@@ -689,37 +764,38 @@ export default function UsersPage() {
                       : 'text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/40'
               }
             `}
-                    >
-                        {record.deleted ? (
-                            <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 15l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
-                                />
-                            </svg>
-                        ) : (
-                            <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                                />
-                            </svg>
-                        )}
-                    </button>
+                        >
+                            {record.deleted ? (
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M12 15l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                                    />
+                                </svg>
+                            ) : (
+                                <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                                    />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
                 ),
             },
         ]

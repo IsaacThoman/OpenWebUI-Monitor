@@ -23,7 +23,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         const checkAuth = async () => {
-            if (pathname === '/token') {
+            if (pathname === '/token' || pathname.startsWith('/account')) {
                 setIsLoading(false)
                 setIsAuthorized(true)
                 return

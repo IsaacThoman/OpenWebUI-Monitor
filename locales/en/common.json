@@ -198,7 +198,13 @@
             "default": "There are no users to display at the moment.",
             "withFilter": "No users found matching \"{{filter}}\"."
         },
-        "loading": "Loading user data..."
+        "loading": "Loading user data...",
+        "viewerLink": {
+            "create": "Create stats link",
+            "createSuccess": "Stats link copied to clipboard",
+            "resetSuccess": "New stats link copied. Previous link was replaced",
+            "createError": "Failed to create stats link"
+        }
     },
 
     "records": {
@@ -335,6 +341,59 @@
         "records": {
             "usageRecord": "Usage record",
             "exportRecord": "Export record"
+        }
+    },
+
+    "userPortal": {
+        "login": {
+            "title": "View your account",
+            "description": "Enter the secure stats link or access token you were given.",
+            "label": "Stats link or token",
+            "placeholder": "Paste a full link or token",
+            "help": "Your admin can generate a personal stats link for you. Pasting the full link works too.",
+            "submit": "Sign in",
+            "submitting": "Signing in...",
+            "required": "Enter your stats link or token",
+            "invalidLink": "This stats link is invalid or expired",
+            "missingLink": "Missing stats link",
+            "failed": "Failed to sign in"
+        },
+        "account": {
+            "badge": "Account overview",
+            "logout": "Sign out",
+            "loading": "Loading your account stats...",
+            "loadFailed": "Failed to load account stats",
+            "never": "No activity yet",
+            "empty": "No usage records yet.",
+            "cards": {
+                "balance": "Current balance",
+                "totalCalls": "Total calls",
+                "totalTokens": "Total tokens",
+                "lastActive": "Last active"
+            },
+            "recentActivity": {
+                "title": "Last 30 days",
+                "calls": "Calls",
+                "tokens": "Tokens",
+                "cost": "Spend"
+            },
+            "overview": {
+                "totalSpend": "Lifetime spend",
+                "averageCost": "Average per call",
+                "firstUse": "First usage"
+            },
+            "topModels": {
+                "title": "Top models",
+                "calls": "calls"
+            },
+            "records": {
+                "title": "Recent usage",
+                "time": "Time",
+                "model": "Model",
+                "tokens": "Tokens",
+                "cost": "Cost",
+                "balanceAfter": "Balance after"
+            }
         }
     }
 }

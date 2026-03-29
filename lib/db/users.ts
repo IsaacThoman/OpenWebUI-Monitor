@@ -1,4 +1,6 @@
-import { query } from './client'
+import { createHash, randomBytes } from 'crypto'
+
+import { ensureTablesExist, query } from './client'
 
 export interface User {
     id: string
@@ -6,6 +8,98 @@ export interface User {
     name: string
     role: string
     balance: number
+    deleted?: boolean
+    has_viewer_token?: boolean
+}
+
+interface CreateUserInput {
+    id: string
+    email: string
+    name: string
+    role?: string
+}
+
+export interface UserPortalStats {
+    profile: {
+        id: string
+        email: string
+        name: string
+        role: string
+        balance: number
+    }
+    overview: {
+        totalCost: number
+        totalCalls: number
+        totalTokens: number
+        averageCost: number
+        firstUseTime: string | null
+        lastUseTime: string | null
+    }
+    recentWindow: {
+        totalCost: number
+        totalCalls: number
+        totalTokens: number
+    }
+    topModels: Array<{
+        modelName: string
+        totalCost: number
+        totalCalls: number
+        totalTokens: number
+    }>
+    recentRecords: Array<{
+        id: number
+        useTime: string
+        modelName: string
+        inputTokens: number
+        outputTokens: number
+        totalTokens: number
+        cost: number
+        balanceAfter: number
+    }>
+}
+
+function hashViewerToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex')
+}
+
+function generateViewerToken(): string {
+    return randomBytes(24).toString('base64url')
+}
+
+async function ensureViewerTokenColumnsExist() {
+    const viewerTokenColumnExists = await query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'viewer_token_hash'
+    );
+  `)
+
+    if (!viewerTokenColumnExists.rows[0].exists) {
+        await query(`
+      ALTER TABLE users
+        ADD COLUMN viewer_token_hash TEXT;
+    `)
+    }
+
+    const viewerTokenCreatedAtColumnExists = await query(`
+    SELECT EXISTS (
+      SELECT FROM information_schema.columns
+      WHERE table_name = 'users' AND column_name = 'viewer_token_created_at'
+    );
+  `)
+
+    if (!viewerTokenCreatedAtColumnExists.rows[0].exists) {
+        await query(`
+      ALTER TABLE users
+        ADD COLUMN viewer_token_created_at TIMESTAMP WITH TIME ZONE;
+    `)
+    }
+
+    await query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_viewer_token_hash_idx
+      ON users(viewer_token_hash)
+      WHERE viewer_token_hash IS NOT NULL;
+  `)
 }
 
 export async function ensureUserTableExists() {
@@ -49,6 +143,8 @@ export async function ensureUserTableExists() {
           ADD COLUMN deleted BOOLEAN DEFAULT FALSE;
       `)
         }
+
+        await ensureViewerTokenColumnsExist()
     } else {
         await query(`
       CREATE TABLE users (
@@ -65,10 +161,12 @@ export async function ensureUserTableExists() {
         await query(`
       CREATE INDEX IF NOT EXISTS users_email_idx ON users(email);
     `)
+
+        await ensureViewerTokenColumnsExist()
     }
 }
 
-export async function getOrCreateUser(userData: any) {
+export async function getOrCreateUser(userData: CreateUserInput) {
     const result = await query(
         `
     INSERT INTO users (id, email, name, role, balance)
@@ -167,7 +265,7 @@ export async function getUsers({
     const offset = (page - 1) * pageSize
 
     let whereClause = 'deleted = FALSE'
-    const queryParams: any[] = []
+    const queryParams: Array<string | number> = []
 
     if (search) {
         queryParams.push(`%${search}%`, `%${search}%`)
@@ -231,4 +329,180 @@ export async function getAllUsers(includeDeleted: boolean = false) {
   `)
 
     return result.rows
+}
+
+export async function issueUserViewerToken(userId: string) {
+    await ensureUserTableExists()
+
+    const token = generateViewerToken()
+    const tokenHash = hashViewerToken(token)
+
+    const result = await query(
+        `
+      UPDATE users
+        SET viewer_token_hash = $2,
+            viewer_token_created_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND deleted = FALSE
+        RETURNING id, email, name, role, balance
+    `,
+        [userId, tokenHash]
+    )
+
+    if (result.rows.length === 0) {
+        throw new Error('User not found')
+    }
+
+    return {
+        token,
+        user: result.rows[0],
+    }
+}
+
+export async function getUserByViewerToken(
+    token: string
+): Promise<User | null> {
+    await ensureTablesExist()
+
+    const result = await query(
+        `
+      SELECT id, email, name, role, balance, deleted,
+        viewer_token_hash IS NOT NULL AS has_viewer_token
+      FROM users
+      WHERE viewer_token_hash = $1
+        AND deleted = FALSE
+      LIMIT 1
+    `,
+        [hashViewerToken(token)]
+    )
+
+    return result.rows[0] || null
+}
+
+export async function getUserPortalStats(
+    userId: string
+): Promise<UserPortalStats | null> {
+    await ensureTablesExist()
+
+    const [
+        userResult,
+        overviewResult,
+        recentWindowResult,
+        topModelsResult,
+        recordsResult,
+    ] = await Promise.all([
+        query(
+            `
+          SELECT id, email, name, role, balance
+          FROM users
+          WHERE id = $1 AND deleted = FALSE
+          LIMIT 1
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens,
+            MIN(use_time) AS first_use_time,
+            MAX(use_time) AS last_use_time
+          FROM user_usage_records
+          WHERE user_id = $1
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
+          FROM user_usage_records
+          WHERE user_id = $1
+            AND use_time >= NOW() - INTERVAL '30 days'
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            model_name,
+            COALESCE(SUM(cost), 0) AS total_cost,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
+          FROM user_usage_records
+          WHERE user_id = $1
+          GROUP BY model_name
+          ORDER BY total_cost DESC, total_calls DESC
+          LIMIT 5
+        `,
+            [userId]
+        ),
+        query(
+            `
+          SELECT
+            id,
+            use_time,
+            model_name,
+            input_tokens,
+            output_tokens,
+            cost,
+            balance_after
+          FROM user_usage_records
+          WHERE user_id = $1
+          ORDER BY use_time DESC
+          LIMIT 10
+        `,
+            [userId]
+        ),
+    ])
+
+    if (userResult.rows.length === 0) {
+        return null
+    }
+
+    const overview = overviewResult.rows[0]
+    const recentWindow = recentWindowResult.rows[0]
+    const totalCalls = parseInt(overview.total_calls || '0')
+    const totalCost = parseFloat(overview.total_cost || '0')
+
+    return {
+        profile: {
+            id: userResult.rows[0].id,
+            email: userResult.rows[0].email,
+            name: userResult.rows[0].name,
+            role: userResult.rows[0].role,
+            balance: parseFloat(userResult.rows[0].balance),
+        },
+        overview: {
+            totalCost,
+            totalCalls,
+            totalTokens: parseInt(overview.total_tokens || '0'),
+            averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
+            firstUseTime: overview.first_use_time,
+            lastUseTime: overview.last_use_time,
+        },
+        recentWindow: {
+            totalCost: parseFloat(recentWindow.total_cost || '0'),
+            totalCalls: parseInt(recentWindow.total_calls || '0'),
+            totalTokens: parseInt(recentWindow.total_tokens || '0'),
+        },
+        topModels: topModelsResult.rows.map((row) => ({
+            modelName: row.model_name,
+            totalCost: parseFloat(row.total_cost),
+            totalCalls: parseInt(row.total_calls),
+            totalTokens: parseInt(row.total_tokens),
+        })),
+        recentRecords: recordsResult.rows.map((row) => ({
+            id: row.id,
+            useTime: row.use_time,
+            modelName: row.model_name,
+            inputTokens: row.input_tokens,
+            outputTokens: row.output_tokens,
+            totalTokens: row.input_tokens + row.output_tokens,
+            cost: parseFloat(row.cost),
+            balanceAfter: parseFloat(row.balance_after),
+        })),
+    }
 }

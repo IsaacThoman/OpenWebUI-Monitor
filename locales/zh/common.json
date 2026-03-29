@@ -198,7 +198,13 @@
             "default": "暂无用户数据显示。",
             "withFilter": "未找到与 \"{{filter}}\" 匹配的用户。"
         },
-        "loading": "正在加载用户数据..."
+        "loading": "正在加载用户数据...",
+        "viewerLink": {
+            "create": "创建统计链接",
+            "createSuccess": "统计链接已复制到剪贴板",
+            "resetSuccess": "新的统计链接已复制，旧链接已失效",
+            "createError": "创建统计链接失败"
+        }
     },
 
     "records": {
@@ -338,5 +344,58 @@
         },
         "exceedsMaxValue": "输入值不能超过 {{max}}",
         "balanceExceedsLimit": "余额超出最大限制"
+    },
+
+    "userPortal": {
+        "login": {
+            "title": "查看你的账户",
+            "description": "输入分配给你的安全统计链接或访问令牌。",
+            "label": "统计链接或令牌",
+            "placeholder": "粘贴完整链接或令牌",
+            "help": "管理员可以为你生成专属统计链接，直接粘贴完整链接也可以登录。",
+            "submit": "登录",
+            "submitting": "登录中...",
+            "required": "请输入统计链接或令牌",
+            "invalidLink": "该统计链接无效或已失效",
+            "missingLink": "缺少统计链接",
+            "failed": "登录失败"
+        },
+        "account": {
+            "badge": "账户概览",
+            "logout": "退出登录",
+            "loading": "正在加载账户统计...",
+            "loadFailed": "加载账户统计失败",
+            "never": "暂无使用记录",
+            "empty": "暂无使用记录。",
+            "cards": {
+                "balance": "当前余额",
+                "totalCalls": "总调用次数",
+                "totalTokens": "总 Tokens",
+                "lastActive": "最近活跃"
+            },
+            "recentActivity": {
+                "title": "最近 30 天",
+                "calls": "调用次数",
+                "tokens": "Tokens",
+                "cost": "消费"
+            },
+            "overview": {
+                "totalSpend": "累计消费",
+                "averageCost": "平均每次调用",
+                "firstUse": "首次使用"
+            },
+            "topModels": {
+                "title": "常用模型",
+                "calls": "次调用"
+            },
+            "records": {
+                "title": "最近使用记录",
+                "time": "时间",
+                "model": "模型",
+                "tokens": "Tokens",
+                "cost": "费用",
+                "balanceAfter": "使用后余额"
+            }
+        }
     }
 }

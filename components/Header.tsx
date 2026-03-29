@@ -40,6 +40,7 @@ export default function Header() {
     const [isBackupModalOpen, setIsBackupModalOpen] = useState(false)
     const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
     const [accessToken, setAccessToken] = useState<string | null>(null)
+    const [apiKey, setApiKey] = useState(t('common.loading'))
 
     const handleLanguageChange = async (newLang: string) => {
         await i18n.changeLanguage(newLang)
@@ -47,6 +48,49 @@ export default function Header() {
     }
 
     const isTokenPage = pathname === '/token'
+    const isAccountPage = pathname.startsWith('/account')
+
+    useEffect(() => {
+        if (isTokenPage || isAccountPage) {
+            return
+        }
+
+        const token = localStorage.getItem('access_token')
+        setAccessToken(token)
+
+        if (!token) {
+            router.push('/token')
+            return
+        }
+
+        fetch('/api/v1/config', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    localStorage.removeItem('access_token')
+                    router.push('/token')
+                    return
+                }
+                return res.json()
+            })
+            .then((data) => {
+                if (data) {
+                    setApiKey(data.apiKey)
+                }
+            })
+            .catch(() => {
+                setApiKey(t('common.error'))
+                localStorage.removeItem('access_token')
+                router.push('/token')
+            })
+    }, [isAccountPage, isTokenPage, router, t])
+
+    if (isAccountPage) {
+        return null
+    }
 
     if (isTokenPage) {
         return (
@@ -99,42 +143,6 @@ export default function Header() {
             </header>
         )
     }
-
-    const [apiKey, setApiKey] = useState(t('common.loading'))
-
-    useEffect(() => {
-        const token = localStorage.getItem('access_token')
-        setAccessToken(token)
-
-        if (!token) {
-            router.push('/token')
-            return
-        }
-
-        fetch('/api/v1/config', {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        })
-            .then((res) => {
-                if (!res.ok) {
-                    localStorage.removeItem('access_token')
-                    router.push('/token')
-                    return
-                }
-                return res.json()
-            })
-            .then((data) => {
-                if (data) {
-                    setApiKey(data.apiKey)
-                }
-            })
-            .catch(() => {
-                setApiKey(t('common.error'))
-                localStorage.removeItem('access_token')
-                router.push('/token')
-            })
-    }, [router, t])
 
     const handleCopyApiKey = () => {
         const token = localStorage.getItem('access_token')
