@@ -446,7 +446,6 @@ export async function getUserPortalStats(
         query(
             `
           SELECT
-            u.model_name,
             COALESCE(mp.name, u.model_name) as display_name,
             COALESCE(SUM(u.cost), 0) AS total_cost,
             COUNT(*) AS total_calls,
@@ -454,7 +453,7 @@ export async function getUserPortalStats(
           FROM user_usage_records u
           LEFT JOIN model_prices mp ON u.model_name = mp.id
           WHERE u.user_id = $1
-          GROUP BY u.model_name, mp.name
+          GROUP BY COALESCE(mp.name, u.model_name)
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
@@ -587,7 +586,6 @@ export async function getUserPortalStatsForTimeRange(
             query(
                 `
           SELECT
-            u.model_name,
             COALESCE(mp.name, u.model_name) as display_name,
             COALESCE(SUM(u.cost), 0) AS total_cost,
             COUNT(*) AS total_calls
@@ -595,7 +593,7 @@ export async function getUserPortalStatsForTimeRange(
           LEFT JOIN model_prices mp ON u.model_name = mp.id
           WHERE u.user_id = $1
           ${timeCondition}
-          GROUP BY u.model_name, mp.name
+          GROUP BY COALESCE(mp.name, u.model_name)
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
