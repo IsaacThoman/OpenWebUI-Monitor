@@ -391,7 +391,7 @@
                 "title": "Lifetime Overview",
                 "totalSpend": "Lifetime spend",
                 "averageCost": "Average per call",
-                "firstUse": "First usage"
+                "firstUse": "Joined"
             },
             "topModels": {
                 "title": "Top models",

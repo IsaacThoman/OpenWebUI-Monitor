@@ -75,6 +75,35 @@ function formatDate(value: string | null, fallback: string): string {
     return new Date(value).toLocaleString()
 }
 
+function formatDateOnly(value: string | null, fallback: string): string {
+    if (!value) {
+        return fallback
+    }
+
+    const date = new Date(value)
+
+    if (Number.isNaN(date.getTime())) {
+        return fallback
+    }
+
+    const monthNames = [
+        'Jan.',
+        'Feb.',
+        'Mar.',
+        'Apr.',
+        'May',
+        'Jun.',
+        'Jul.',
+        'Aug.',
+        'Sep.',
+        'Oct.',
+        'Nov.',
+        'Dec.',
+    ]
+
+    return `${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`
+}
+
 function getSelectedPeriodDayCount(
     range: TimeRange,
     firstUseTime: string | null
@@ -358,13 +387,37 @@ export default function PersonalPage() {
                 </p>
             </div>
 
-            <div className="mb-6">
-                <p className="text-xs text-muted-foreground mb-1">
-                    Current balance
-                </p>
-                <p className="text-2xl font-medium">
-                    {formatCurrency(data.profile.balance, currencySymbol)}
-                </p>
+            <div className="mb-6 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:gap-0">
+                <div className="min-w-[170px] md:pr-5">
+                    <p className="mb-1 text-xs text-muted-foreground">
+                        {t('userPortal.account.cards.balance')}
+                    </p>
+                    <p className="text-2xl font-medium">
+                        {formatCurrency(data.profile.balance, currencySymbol)}
+                    </p>
+                </div>
+                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+                    <p className="mb-1 text-xs text-muted-foreground">
+                        {t('userPortal.account.overview.totalSpend')}
+                    </p>
+                    <p className="text-2xl font-medium">
+                        {formatCurrency(
+                            data.overview.totalCost,
+                            currencySymbol
+                        )}
+                    </p>
+                </div>
+                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+                    <p className="mb-1 text-xs text-muted-foreground">
+                        {t('userPortal.account.overview.firstUse')}
+                    </p>
+                    <p className="text-2xl font-medium">
+                        {formatDateOnly(
+                            data.overview.firstUseTime,
+                            t('userPortal.account.never')
+                        )}
+                    </p>
+                </div>
             </div>
 
             <div className="mb-4 border">
