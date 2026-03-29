@@ -477,7 +477,16 @@ export default function AccountPage() {
                                                             )}
                                                         </td>
                                                         <td className="px-4 py-2.5 font-medium text-white">
-                                                            {record.modelName}
+                                                            <span
+                                                                className="block max-w-[200px] truncate"
+                                                                title={
+                                                                    record.modelName
+                                                                }
+                                                            >
+                                                                {
+                                                                    record.modelName
+                                                                }
+                                                            </span>
                                                         </td>
                                                         <td className="px-4 py-2.5">
                                                             {formatNumber(
@@ -529,14 +538,17 @@ export default function AccountPage() {
                                     {data.topModels.map((model, index) => (
                                         <div
                                             key={model.modelName}
-                                            className="flex items-center justify-between px-4 py-3"
+                                            className="flex items-center justify-between gap-3 px-4 py-3"
                                         >
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex min-w-0 flex-1 items-center gap-3">
                                                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-slate-800 text-xs font-medium text-slate-400">
                                                     {index + 1}
                                                 </span>
-                                                <div className="min-w-0">
-                                                    <p className="truncate text-sm font-medium text-white">
+                                                <div className="min-w-0 flex-1">
+                                                    <p
+                                                        className="truncate text-sm font-medium text-white"
+                                                        title={model.modelName}
+                                                    >
                                                         {model.modelName}
                                                     </p>
                                                     <p className="text-xs text-slate-500">
@@ -549,7 +561,7 @@ export default function AccountPage() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span className="text-sm font-medium text-emerald-400">
+                                            <span className="shrink-0 text-sm font-medium text-emerald-400">
                                                 {formatCurrency(
                                                     model.totalCost,
                                                     currencySymbol
