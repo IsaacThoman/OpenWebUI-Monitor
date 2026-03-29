@@ -3,6 +3,8 @@ import { cookies } from 'next/headers'
 import { getUserByViewerToken } from '@/lib/db/users'
 import { USER_PORTAL_COOKIE } from '@/lib/user-portal-constants'
 
+export { USER_PORTAL_COOKIE } from '@/lib/user-portal-constants'
+
 function isProduction(): boolean {
     return process.env.NODE_ENV === 'production'
 }

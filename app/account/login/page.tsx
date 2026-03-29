@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Link2, ShieldCheck, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
@@ -34,7 +34,7 @@ function extractToken(value: string): string {
     return trimmed
 }
 
-export default function AccountLoginPage() {
+function AccountLoginContent() {
     const [value, setValue] = useState('')
     const [loading, setLoading] = useState(false)
     const router = useRouter()
@@ -155,5 +155,13 @@ export default function AccountLoginPage() {
                 </p>
             </div>
         </div>
+    )
+}
+
+export default function AccountLoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <AccountLoginContent />
+        </Suspense>
     )
 }

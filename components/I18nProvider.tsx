@@ -10,26 +10,25 @@ import enCommon from '@/locales/en/common.json'
 import zhCommon from '@/locales/zh/common.json'
 import esCommon from '@/locales/es/common.json'
 
-const i18n = i18next
-    .use(LanguageDetector)
-    .use(initReactI18next)
-    .init({
-        resources: {
-            en: {
-                common: enCommon,
-            },
-            zh: {
-                common: zhCommon,
-            },
-            es: {
-                common: esCommon,
-            },
+const i18n = i18next.createInstance()
+
+void i18n.use(LanguageDetector).use(initReactI18next).init({
+    resources: {
+        en: {
+            common: enCommon,
         },
-        fallbackLng: 'en',
-        interpolation: {
-            escapeValue: false,
+        zh: {
+            common: zhCommon,
         },
-    })
+        es: {
+            common: esCommon,
+        },
+    },
+    fallbackLng: 'en',
+    interpolation: {
+        escapeValue: false,
+    },
+})
 
 export default function I18nProvider({ children }: PropsWithChildren) {
     useEffect(() => {
