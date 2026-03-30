@@ -422,10 +422,62 @@
             },
             "tabs": {
                 "personal": "Personal",
+                "leaderboard": "Leaderboard",
                 "users": "Users",
                 "models": "Models",
                 "analytics": "Analytics"
             }
+        },
+        "leaderboard": {
+            "loadFailed": "Failed to load leaderboard",
+            "saveSuccess": "Leaderboard settings saved",
+            "saveFailed": "Failed to save leaderboard settings",
+            "settings": {
+                "title": "Leaderboard profile",
+                "description": "Choose how you appear to everyone else.",
+                "showName": "Show name on leaderboard",
+                "showNameHint": "Users who leave this off appear as Anonymous.",
+                "nickname": "Leaderboard nickname",
+                "nicknamePlaceholder": "How other users should see you",
+                "helper": "Leave the nickname blank to use your account name.",
+                "currentLabel": "Current display",
+                "save": "Save changes",
+                "saving": "Saving..."
+            },
+            "overview": {
+                "title": "Usage overview",
+                "calls": "Calls",
+                "tokens": "Tokens",
+                "spend": "Spend",
+                "averageCost": "Avg per call"
+            },
+            "periods": {
+                "24h": "24 hours",
+                "7d": "7 days",
+                "30d": "30 days",
+                "90d": "90 days",
+                "all": "All time"
+            },
+            "chart": {
+                "title": "Leaderboard",
+                "description": "Each bar compares total usage for the selected period.",
+                "empty": "No leaderboard activity for this time range.",
+                "users": "{{count}} users",
+                "metrics": {
+                    "usd": "USD",
+                    "tokens": "Tokens",
+                    "calls": "Calls"
+                }
+            },
+            "table": {
+                "rank": "Rank",
+                "user": "User",
+                "calls": "Calls",
+                "tokens": "Tokens",
+                "spend": "Spend",
+                "averageCost": "Avg/call"
+            },
+            "anonymous": "Anonymous"
         }
     }
 }

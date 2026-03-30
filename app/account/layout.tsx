@@ -325,7 +325,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
         },
         {
             id: 'leaderboard',
-            label: 'Leaderboard',
+            label: t('userPortal.account.tabs.leaderboard'),
             icon: <BarChart3 className="h-4 w-4" />,
         },
         {

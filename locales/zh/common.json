@@ -424,10 +424,62 @@
             },
             "tabs": {
                 "personal": "个人",
+                "leaderboard": "排行榜",
                 "users": "用户",
                 "models": "模型",
                 "analytics": "分析"
             }
+        },
+        "leaderboard": {
+            "loadFailed": "加载排行榜失败",
+            "saveSuccess": "排行榜设置已保存",
+            "saveFailed": "保存排行榜设置失败",
+            "settings": {
+                "title": "排行榜资料",
+                "description": "选择你在其他用户面前的显示方式。",
+                "showName": "在排行榜显示名字",
+                "showNameHint": "关闭后将以 Anonymous 显示。",
+                "nickname": "排行榜昵称",
+                "nicknamePlaceholder": "其他用户看到的名字",
+                "helper": "留空时将使用你的账户名称。",
+                "currentLabel": "当前显示",
+                "save": "保存更改",
+                "saving": "保存中..."
+            },
+            "overview": {
+                "title": "使用概览",
+                "calls": "调用次数",
+                "tokens": "Tokens",
+                "spend": "消费",
+                "averageCost": "平均每次调用"
+            },
+            "periods": {
+                "24h": "24 小时",
+                "7d": "7 天",
+                "30d": "30 天",
+                "90d": "90 天",
+                "all": "全部时间"
+            },
+            "chart": {
+                "title": "排行榜",
+                "description": "每个柱条展示所选时间范围内的总使用量。",
+                "empty": "该时间范围内暂无排行榜数据。",
+                "users": "{{count}} 位用户",
+                "metrics": {
+                    "usd": "USD",
+                    "tokens": "Tokens",
+                    "calls": "调用"
+                }
+            },
+            "table": {
+                "rank": "排名",
+                "user": "用户",
+                "calls": "调用次数",
+                "tokens": "Tokens",
+                "spend": "消费",
+                "averageCost": "平均/次"
+            },
+            "anonymous": "Anonymous"
         }
     }
 }

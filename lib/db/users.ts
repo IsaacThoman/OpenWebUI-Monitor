@@ -11,6 +11,9 @@ export interface User {
     deleted?: boolean
     has_viewer_token?: boolean
     viewer_token?: string | null
+    created_at?: string | null
+    leaderboard_show_name?: boolean
+    leaderboard_nickname?: string | null
 }
 
 interface CreateUserInput {
@@ -28,6 +31,9 @@ export interface UserPortalStats {
         role: string
         balance: number
         viewerToken: string | null
+        createdAt: string | null
+        showNameOnLeaderboard: boolean
+        leaderboardNickname: string | null
     }
     overview: {
         totalCost: number
@@ -60,6 +66,24 @@ export interface UserPortalStats {
     }>
 }
 
+export interface LeaderboardEntry {
+    userId: string
+    displayName: string
+    isAnonymous: boolean
+    totalCalls: number
+    totalTokens: number
+    totalCost: number
+    averageCost: number
+}
+
+export interface LeaderboardStats {
+    totalCalls: number
+    totalTokens: number
+    totalCost: number
+    averageCost: number
+    users: LeaderboardEntry[]
+}
+
 function hashViewerToken(token: string): string {
     return createHash('sha256').update(token).digest('hex')
 }
@@ -86,6 +110,14 @@ async function ensureViewerTokenColumnsExist() {
     CREATE UNIQUE INDEX IF NOT EXISTS users_viewer_token_hash_idx
       ON users(viewer_token_hash)
       WHERE viewer_token_hash IS NOT NULL;
+  `)
+}
+
+async function ensureLeaderboardColumnsExist() {
+    await query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS leaderboard_show_name BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS leaderboard_nickname TEXT;
   `)
 }
 
@@ -132,6 +164,7 @@ export async function ensureUserTableExists() {
         }
 
         await ensureViewerTokenColumnsExist()
+        await ensureLeaderboardColumnsExist()
     } else {
         await query(`
       CREATE TABLE users (
@@ -141,7 +174,9 @@ export async function ensureUserTableExists() {
         role TEXT NOT NULL,
         balance DECIMAL(16,4) NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        deleted BOOLEAN DEFAULT FALSE
+        deleted BOOLEAN DEFAULT FALSE,
+        leaderboard_show_name BOOLEAN DEFAULT FALSE,
+        leaderboard_nickname TEXT
       );
     `)
 
@@ -150,6 +185,7 @@ export async function ensureUserTableExists() {
     `)
 
         await ensureViewerTokenColumnsExist()
+        await ensureLeaderboardColumnsExist()
     }
 }
 
@@ -397,6 +433,38 @@ export async function getUserByViewerToken(
     return result.rows[0] || null
 }
 
+export async function updateUserLeaderboardPreferences(
+    userId: string,
+    input: {
+        showNameOnLeaderboard: boolean
+        leaderboardNickname: string | null
+    }
+) {
+    await ensureUserTableExists()
+
+    const result = await query(
+        `
+      UPDATE users
+      SET leaderboard_show_name = $2,
+          leaderboard_nickname = $3
+      WHERE id = $1
+        AND deleted = FALSE
+      RETURNING COALESCE(leaderboard_show_name, FALSE) AS leaderboard_show_name,
+                leaderboard_nickname
+    `,
+        [userId, input.showNameOnLeaderboard, input.leaderboardNickname]
+    )
+
+    if (result.rows.length === 0) {
+        throw new Error('User not found')
+    }
+
+    return {
+        showNameOnLeaderboard: Boolean(result.rows[0].leaderboard_show_name),
+        leaderboardNickname: result.rows[0].leaderboard_nickname || null,
+    }
+}
+
 export async function getUserPortalStats(
     userId: string
 ): Promise<UserPortalStats | null> {
@@ -411,7 +479,15 @@ export async function getUserPortalStats(
     ] = await Promise.all([
         query(
             `
-          SELECT id, email, name, role, balance, viewer_token
+          SELECT id,
+                 email,
+                 name,
+                 role,
+                 balance,
+                 viewer_token,
+                 created_at,
+                 COALESCE(leaderboard_show_name, FALSE) AS leaderboard_show_name,
+                 leaderboard_nickname
           FROM users
           WHERE id = $1 AND deleted = FALSE
           LIMIT 1
@@ -497,6 +573,12 @@ export async function getUserPortalStats(
             role: userResult.rows[0].role,
             balance: parseFloat(userResult.rows[0].balance),
             viewerToken: userResult.rows[0].viewer_token || null,
+            createdAt: userResult.rows[0].created_at || null,
+            showNameOnLeaderboard: Boolean(
+                userResult.rows[0].leaderboard_show_name
+            ),
+            leaderboardNickname:
+                userResult.rows[0].leaderboard_nickname || null,
         },
         overview: {
             totalCost,
@@ -759,5 +841,84 @@ export async function getUserPortalStatsForTimeRange(
             total: recentRecordsTotal,
             totalPages: recentRecordsTotalPages,
         },
+    }
+}
+
+export async function getLeaderboardStats(
+    days?: number
+): Promise<LeaderboardStats> {
+    await ensureUserTableExists()
+
+    const queryParams: number[] = []
+    const timeCondition = days
+        ? `AND r.use_time >= NOW() - ($1 * INTERVAL '1 day')`
+        : ''
+
+    if (days) {
+        queryParams.push(days)
+    }
+
+    const [statsResult, usersResult] = await Promise.all([
+        query(
+            `
+          SELECT
+            COALESCE(SUM(r.cost), 0) AS total_cost,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${timeCondition}
+        `,
+            queryParams
+        ),
+        query(
+            `
+          SELECT
+            u.id,
+            u.name,
+            COALESCE(u.leaderboard_show_name, FALSE) AS leaderboard_show_name,
+            NULLIF(BTRIM(u.leaderboard_nickname), '') AS leaderboard_nickname,
+            COUNT(*) AS total_calls,
+            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens,
+            COALESCE(SUM(r.cost), 0) AS total_cost
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${timeCondition}
+          GROUP BY u.id, u.name, u.leaderboard_show_name, u.leaderboard_nickname
+          ORDER BY total_cost DESC, total_calls DESC, u.name ASC
+        `,
+            queryParams
+        ),
+    ])
+
+    const stats = statsResult.rows[0]
+    const totalCalls = parseInt(stats.total_calls || '0')
+    const totalCost = parseFloat(stats.total_cost || '0')
+
+    return {
+        totalCalls,
+        totalTokens: parseInt(stats.total_tokens || '0'),
+        totalCost,
+        averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
+        users: usersResult.rows.map((row) => {
+            const totalUserCalls = parseInt(row.total_calls || '0')
+            const totalUserCost = parseFloat(row.total_cost || '0')
+            const isAnonymous = !row.leaderboard_show_name
+
+            return {
+                userId: row.id,
+                displayName: isAnonymous
+                    ? 'Anonymous'
+                    : row.leaderboard_nickname || row.name,
+                isAnonymous,
+                totalCalls: totalUserCalls,
+                totalTokens: parseInt(row.total_tokens || '0'),
+                totalCost: totalUserCost,
+                averageCost:
+                    totalUserCalls > 0 ? totalUserCost / totalUserCalls : 0,
+            }
+        }),
     }
 }

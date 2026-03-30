@@ -424,10 +424,62 @@
             },
             "tabs": {
                 "personal": "Personal",
+                "leaderboard": "Clasificación",
                 "users": "Usuarios",
                 "models": "Modelos",
                 "analytics": "Análisis"
             }
+        },
+        "leaderboard": {
+            "loadFailed": "Error al cargar la clasificación",
+            "saveSuccess": "Preferencias de clasificación guardadas",
+            "saveFailed": "Error al guardar las preferencias de clasificación",
+            "settings": {
+                "title": "Perfil de clasificación",
+                "description": "Elige cómo apareces para otros usuarios.",
+                "showName": "Mostrar nombre en la clasificación",
+                "showNameHint": "Los usuarios que lo desactiven aparecerán como Anónimo.",
+                "nickname": "Apodo de la clasificación",
+                "nicknamePlaceholder": "Cómo quieres que te vean los demás",
+                "helper": "Deja el apodo vacío para usar tu nombre de cuenta.",
+                "currentLabel": "Visualización actual",
+                "save": "Guardar cambios",
+                "saving": "Guardando..."
+            },
+            "overview": {
+                "title": "Resumen de uso",
+                "calls": "Llamadas",
+                "tokens": "Tokens",
+                "spend": "Gasto",
+                "averageCost": "Prom. por llamada"
+            },
+            "periods": {
+                "24h": "24 horas",
+                "7d": "7 días",
+                "30d": "30 días",
+                "90d": "90 días",
+                "all": "Todo el tiempo"
+            },
+            "chart": {
+                "title": "Clasificación",
+                "description": "Cada barra compara el uso total del periodo seleccionado.",
+                "empty": "No hay actividad en la clasificación para este periodo.",
+                "users": "{{count}} usuarios",
+                "metrics": {
+                    "usd": "USD",
+                    "tokens": "Tokens",
+                    "calls": "Llamadas"
+                }
+            },
+            "table": {
+                "rank": "Rango",
+                "user": "Usuario",
+                "calls": "Llamadas",
+                "tokens": "Tokens",
+                "spend": "Gasto",
+                "averageCost": "Prom./llamada"
+            },
+            "anonymous": "Anónimo"
         }
     }
 }
