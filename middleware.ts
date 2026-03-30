@@ -45,6 +45,18 @@ function getUserPortalSession(request: NextRequest): UserPortalSession | null {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
+    const legacyAdminRouteRedirects: Record<string, string> = {
+        '/users': '/account/users',
+        '/models': '/account/models',
+        '/panel': '/account/analytics',
+        '/records': '/account/analytics',
+    }
+
+    const redirectPath = legacyAdminRouteRedirects[pathname]
+    if (redirectPath) {
+        return NextResponse.redirect(new URL(redirectPath, request.url))
+    }
+
     // Inlet/outlet endpoints use API_KEY (for OpenWebUI function calls)
     if (
         pathname.startsWith('/api/v1/inlet') ||
