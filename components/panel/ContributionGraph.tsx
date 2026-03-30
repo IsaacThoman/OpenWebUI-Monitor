@@ -370,8 +370,8 @@ export default function ContributionGraph({
                     </h4>
                 </div>
 
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                    <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-3">
+                    <div className="min-w-0 w-full lg:w-fit lg:flex-none">
                         {/* Scrollable graph area */}
                         <div
                             ref={scrollRef}
