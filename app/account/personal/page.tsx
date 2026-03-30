@@ -78,7 +78,13 @@ function formatDate(value: string | null, fallback: string): string {
     if (!value) {
         return fallback
     }
-    return new Date(value).toLocaleString()
+    return new Date(value).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+    })
 }
 
 function formatDateOnly(value: string | null, fallback: string): string {
