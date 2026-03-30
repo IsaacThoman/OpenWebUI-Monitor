@@ -462,3 +462,40 @@ body {
 .admin-dark-theme .ant-table-filter-trigger.active {
     color: hsl(220 15% 55%) !important;
 }
+
+/* Contribution graph cells — works for both SVG <rect> and HTML <div> */
+.contribution-cell {
+    transition: opacity 0.1s ease;
+}
+
+.contribution-cell:hover {
+    opacity: 0.8;
+    stroke: hsl(220 15% 60%);
+    stroke-width: 1;
+}
+
+.contribution-cell[data-level='0'] {
+    fill: hsl(220 15% 14%);
+    background-color: hsl(220 15% 14%);
+}
+
+.contribution-cell[data-level='1'] {
+    fill: hsl(130 40% 18%);
+    background-color: hsl(130 40% 18%);
+}
+
+.contribution-cell[data-level='2'] {
+    fill: hsl(130 45% 28%);
+    background-color: hsl(130 45% 28%);
+}
+
+.contribution-cell[data-level='3'] {
+    fill: hsl(130 50% 38%);
+    background-color: hsl(130 50% 38%);
+}
+
+.contribution-cell[data-level='4'] {
+    fill: hsl(130 55% 48%);
+    background-color: hsl(130 55% 48%);
+}
+

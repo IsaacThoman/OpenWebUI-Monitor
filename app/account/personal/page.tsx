@@ -230,6 +230,21 @@ export default function PersonalPage() {
     const [dailyUsageMetric, setDailyUsageMetric] = useState<
         'cost' | 'tokens' | 'calls'
     >('cost')
+    const [contributionData, setContributionData] = useState<
+        Array<{
+            date: string
+            totalCost: number
+            totalTokens: number
+            totalCalls: number
+            models: Array<{
+                name: string
+                cost: number
+                tokens: number
+                calls: number
+            }>
+        }>
+    >([])
+    const [contributionLoading, setContributionLoading] = useState(true)
     const router = useRouter()
     const { t } = useTranslation('common')
     const currencySymbol = t('common.currency')
@@ -336,6 +351,33 @@ export default function PersonalPage() {
     useEffect(() => {
         fetchTimeRangeStats(timeRange, recentRecordsPage, recentRecordsPageSize)
     }, [timeRange, recentRecordsPage, recentRecordsPageSize])
+
+    // Fetch full year of daily data for the contribution graph
+    useEffect(() => {
+        const fetchContributionData = async () => {
+            setContributionLoading(true)
+            try {
+                const params = new URLSearchParams({
+                    days: '365',
+                    page: '1',
+                    pageSize: '1',
+                })
+                const response = await fetch(
+                    `/api/v1/user-portal/stats?${params.toString()}`
+                )
+                if (!response.ok) throw new Error('Failed to fetch')
+                const result = await response.json()
+                if (result.data?.dailyUsage) {
+                    setContributionData(result.data.dailyUsage)
+                }
+            } catch {
+                // Keep empty on error
+            } finally {
+                setContributionLoading(false)
+            }
+        }
+        fetchContributionData()
+    }, [])
 
     const paginationItems = getPaginationItems(
         recentRecordsPage,
@@ -532,6 +574,8 @@ export default function PersonalPage() {
                     periodDayCount={selectedPeriodDayCount}
                     metric={dailyUsageMetric}
                     onMetricChange={setDailyUsageMetric}
+                    contributionData={contributionData}
+                    contributionLoading={contributionLoading}
                 />
             </div>
 

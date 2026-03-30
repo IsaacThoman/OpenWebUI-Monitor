@@ -11,6 +11,7 @@ import {
     LineChartOutlined,
 } from '@ant-design/icons'
 import { cn } from '@/lib/utils'
+import ContributionGraph from './ContributionGraph'
 
 interface ModelUsage {
     name: string
@@ -33,6 +34,8 @@ interface DailyUsageChartProps {
     periodDayCount: number
     metric: 'cost' | 'tokens' | 'calls'
     onMetricChange: (metric: 'cost' | 'tokens' | 'calls') => void
+    contributionData?: DailyUsage[]
+    contributionLoading?: boolean
 }
 
 interface TooltipParam {
@@ -364,6 +367,8 @@ export default function DailyUsageChart({
     periodDayCount,
     metric,
     onMetricChange,
+    contributionData,
+    contributionLoading,
 }: DailyUsageChartProps) {
     const { t } = useTranslation('common')
     const chartRef = useRef<ECharts>()
@@ -565,6 +570,12 @@ export default function DailyUsageChart({
                                 </p>
                             </div>
                         </div>
+
+                        <ContributionGraph
+                            data={contributionData ?? data}
+                            metric={metric}
+                            loading={contributionLoading ?? loading}
+                        />
                     </>
                 )}
             </div>
