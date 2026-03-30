@@ -388,9 +388,18 @@ export default function PersonalPage() {
         <div>
             <div className="mb-4">
                 <h1 className="text-lg font-medium">{data.profile.name}</h1>
-                <p className="text-xs text-muted-foreground">
-                    {data.profile.email}
-                </p>
+                <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">
+                        {data.profile.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                        · Joined{' '}
+                        {formatDateOnly(
+                            data.overview.firstUseTime,
+                            t('userPortal.account.never')
+                        )}
+                    </p>
+                </div>
             </div>
 
             <div className="mb-6 flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:gap-0">
@@ -414,17 +423,6 @@ export default function PersonalPage() {
                     </p>
                 </div>
                 <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-                    <p className="mb-1 text-xs text-muted-foreground">
-                        {t('userPortal.account.overview.firstUse')}
-                    </p>
-                    <p className="text-2xl font-medium">
-                        {formatDateOnly(
-                            data.overview.firstUseTime,
-                            t('userPortal.account.never')
-                        )}
-                    </p>
-                </div>
-                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -435,10 +433,10 @@ export default function PersonalPage() {
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p className="max-w-[300px]">
-                                    Based on Altman's estimate where a query
-                                    uses 1/15 tsp of water & assumes typical
-                                    prompt cost ~$0.002 (common medical question
-                                    to gpt-5 mini in flex mode)
+                                    Based on Altman&apos;s estimate where a
+                                    query uses 1/15 tsp of water & assumes
+                                    typical prompt cost ~$0.002 (common medical
+                                    question to gpt-5 mini in flex mode)
                                 </p>
                             </TooltipContent>
                         </Tooltip>
