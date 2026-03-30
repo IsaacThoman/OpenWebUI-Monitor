@@ -16,6 +16,7 @@ import {
     Settings,
     Github,
     X,
+    User,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
@@ -49,7 +50,7 @@ interface UserPortalResponse {
     }
 }
 
-type TabId = 'personal' | 'users' | 'models' | 'analytics'
+type TabId = 'personal' | 'leaderboard' | 'users' | 'models' | 'analytics'
 
 interface AccountLayoutProps {
     children: React.ReactNode
@@ -274,6 +275,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
     }
 
     const getActiveTab = (): TabId => {
+        if (pathname.includes('/leaderboard')) return 'leaderboard'
         if (pathname.includes('/users')) return 'users'
         if (pathname.includes('/models')) return 'models'
         if (pathname.includes('/analytics')) return 'analytics'
@@ -319,6 +321,11 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
         {
             id: 'personal',
             label: t('userPortal.account.tabs.personal'),
+            icon: <User className="h-4 w-4" />,
+        },
+        {
+            id: 'leaderboard',
+            label: 'Leaderboard',
             icon: <BarChart3 className="h-4 w-4" />,
         },
         {
