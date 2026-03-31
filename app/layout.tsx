@@ -32,8 +32,16 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" translate="no" className="notranslate">
-            <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <html
+            lang="en"
+            translate="no"
+            className="notranslate"
+            style={{ backgroundColor: 'hsl(220 15% 8%)' }}
+        >
+            <body
+                className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground`}
+                style={{ backgroundColor: 'hsl(220 15% 8%)' }}
+            >
                 <div id="modal-root" className="relative z-[100]" />
                 <I18nProvider>
                     <HtmlLangWrapper />
