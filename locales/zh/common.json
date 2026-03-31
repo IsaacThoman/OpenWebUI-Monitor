@@ -441,6 +441,7 @@
                 "showNameHint": "关闭后将以 Anonymous 显示。",
                 "nickname": "排行榜昵称",
                 "nicknamePlaceholder": "其他用户看到的名字",
+                "barColor": "柱条颜色",
                 "helper": "留空时将使用你的账户名称。",
                 "currentLabel": "当前显示",
                 "save": "保存更改",

@@ -441,6 +441,7 @@
                 "showNameHint": "Los usuarios que lo desactiven aparecerán como Anónimo.",
                 "nickname": "Apodo de la clasificación",
                 "nicknamePlaceholder": "Cómo quieres que te vean los demás",
+                "barColor": "Color de barra",
                 "helper": "Deja el apodo vacío para usar tu nombre de cuenta.",
                 "currentLabel": "Visualización actual",
                 "save": "Guardar cambios",

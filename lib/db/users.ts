@@ -1,5 +1,10 @@
 import { createHash, randomBytes } from 'crypto'
 
+import {
+    DEFAULT_LEADERBOARD_BAR_COLOR,
+    LEADERBOARD_BAR_COLORS,
+} from '@/lib/user-portal-constants'
+
 import { query } from './client'
 
 export interface User {
@@ -14,6 +19,7 @@ export interface User {
     created_at?: string | null
     leaderboard_show_name?: boolean
     leaderboard_nickname?: string | null
+    leaderboard_color?: string | null
 }
 
 interface CreateUserInput {
@@ -34,6 +40,7 @@ export interface UserPortalStats {
         createdAt: string | null
         showNameOnLeaderboard: boolean
         leaderboardNickname: string | null
+        leaderboardColor: string | null
     }
     overview: {
         totalCost: number
@@ -70,6 +77,7 @@ export interface LeaderboardEntry {
     userId: string
     displayName: string
     isAnonymous: boolean
+    leaderboardColor: string | null
     totalCalls: number
     totalTokens: number
     totalCost: number
@@ -117,7 +125,8 @@ async function ensureLeaderboardColumnsExist() {
     await query(`
     ALTER TABLE users
       ADD COLUMN IF NOT EXISTS leaderboard_show_name BOOLEAN DEFAULT FALSE,
-      ADD COLUMN IF NOT EXISTS leaderboard_nickname TEXT;
+      ADD COLUMN IF NOT EXISTS leaderboard_nickname TEXT,
+      ADD COLUMN IF NOT EXISTS leaderboard_color TEXT;
   `)
 }
 
@@ -176,7 +185,8 @@ export async function ensureUserTableExists() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         deleted BOOLEAN DEFAULT FALSE,
         leaderboard_show_name BOOLEAN DEFAULT FALSE,
-        leaderboard_nickname TEXT
+        leaderboard_nickname TEXT,
+        leaderboard_color TEXT
       );
     `)
 
@@ -438,6 +448,7 @@ export async function updateUserLeaderboardPreferences(
     input: {
         showNameOnLeaderboard: boolean
         leaderboardNickname: string | null
+        leaderboardColor: string
     }
 ) {
     await ensureUserTableExists()
@@ -446,13 +457,20 @@ export async function updateUserLeaderboardPreferences(
         `
       UPDATE users
       SET leaderboard_show_name = $2,
-          leaderboard_nickname = $3
+          leaderboard_nickname = $3,
+          leaderboard_color = $4
       WHERE id = $1
         AND deleted = FALSE
       RETURNING COALESCE(leaderboard_show_name, FALSE) AS leaderboard_show_name,
-                leaderboard_nickname
+                leaderboard_nickname,
+                leaderboard_color
     `,
-        [userId, input.showNameOnLeaderboard, input.leaderboardNickname]
+        [
+            userId,
+            input.showNameOnLeaderboard,
+            input.leaderboardNickname,
+            input.leaderboardColor,
+        ]
     )
 
     if (result.rows.length === 0) {
@@ -462,6 +480,8 @@ export async function updateUserLeaderboardPreferences(
     return {
         showNameOnLeaderboard: Boolean(result.rows[0].leaderboard_show_name),
         leaderboardNickname: result.rows[0].leaderboard_nickname || null,
+        leaderboardColor:
+            result.rows[0].leaderboard_color || DEFAULT_LEADERBOARD_BAR_COLOR,
     }
 }
 
@@ -487,7 +507,8 @@ export async function getUserPortalStats(
                  viewer_token,
                  created_at,
                  COALESCE(leaderboard_show_name, FALSE) AS leaderboard_show_name,
-                 leaderboard_nickname
+                 leaderboard_nickname,
+                 leaderboard_color
           FROM users
           WHERE id = $1 AND deleted = FALSE
           LIMIT 1
@@ -579,6 +600,9 @@ export async function getUserPortalStats(
             ),
             leaderboardNickname:
                 userResult.rows[0].leaderboard_nickname || null,
+            leaderboardColor:
+                userResult.rows[0].leaderboard_color ||
+                DEFAULT_LEADERBOARD_BAR_COLOR,
         },
         overview: {
             totalCost,
@@ -879,6 +903,7 @@ export async function getLeaderboardStats(
             u.name,
             COALESCE(u.leaderboard_show_name, FALSE) AS leaderboard_show_name,
             NULLIF(BTRIM(u.leaderboard_nickname), '') AS leaderboard_nickname,
+            u.leaderboard_color,
             COUNT(*) AS total_calls,
             COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens,
             COALESCE(SUM(r.cost), 0) AS total_cost
@@ -886,7 +911,7 @@ export async function getLeaderboardStats(
           INNER JOIN users u ON u.id = r.user_id
           WHERE (u.deleted = FALSE OR u.deleted IS NULL)
           ${timeCondition}
-          GROUP BY u.id, u.name, u.leaderboard_show_name, u.leaderboard_nickname
+          GROUP BY u.id, u.name, u.leaderboard_show_name, u.leaderboard_nickname, u.leaderboard_color
           ORDER BY total_cost DESC, total_calls DESC, u.name ASC
         `,
             queryParams
@@ -906,6 +931,11 @@ export async function getLeaderboardStats(
             const totalUserCalls = parseInt(row.total_calls || '0')
             const totalUserCost = parseFloat(row.total_cost || '0')
             const isAnonymous = !row.leaderboard_show_name
+            const leaderboardColor = LEADERBOARD_BAR_COLORS.includes(
+                row.leaderboard_color as (typeof LEADERBOARD_BAR_COLORS)[number]
+            )
+                ? row.leaderboard_color
+                : DEFAULT_LEADERBOARD_BAR_COLOR
 
             return {
                 userId: row.id,
@@ -913,6 +943,7 @@ export async function getLeaderboardStats(
                     ? 'Anonymous'
                     : row.leaderboard_nickname || row.name,
                 isAnonymous,
+                leaderboardColor,
                 totalCalls: totalUserCalls,
                 totalTokens: parseInt(row.total_tokens || '0'),
                 totalCost: totalUserCost,

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 
+import { LEADERBOARD_BAR_COLORS } from '@/lib/user-portal-constants'
 import {
     getUserPortalStats,
     updateUserLeaderboardPreferences,
@@ -11,6 +12,7 @@ export const dynamic = 'force-dynamic'
 interface UpdateLeaderboardPreferencesRequestBody {
     showNameOnLeaderboard?: boolean
     leaderboardNickname?: string | null
+    leaderboardColor?: string
 }
 
 export async function GET() {
@@ -57,6 +59,7 @@ export async function PATCH(request: Request) {
         const {
             showNameOnLeaderboard,
             leaderboardNickname,
+            leaderboardColor,
         }: UpdateLeaderboardPreferencesRequestBody = await request.json()
 
         if (typeof showNameOnLeaderboard !== 'boolean') {
@@ -83,6 +86,21 @@ export async function PATCH(request: Request) {
             )
         }
 
+        if (
+            leaderboardColor !== undefined &&
+            !LEADERBOARD_BAR_COLORS.includes(
+                leaderboardColor as (typeof LEADERBOARD_BAR_COLORS)[number]
+            )
+        ) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'leaderboardColor must be a supported color',
+                },
+                { status: 400 }
+            )
+        }
+
         const normalizedNickname = leaderboardNickname?.trim() || null
 
         if (normalizedNickname && normalizedNickname.length > 40) {
@@ -101,6 +119,7 @@ export async function PATCH(request: Request) {
                 normalizedNickname && normalizedNickname !== user.name.trim()
                     ? normalizedNickname
                     : null,
+            leaderboardColor: leaderboardColor || LEADERBOARD_BAR_COLORS[0],
         })
 
         return NextResponse.json({ success: true, data: preferences })

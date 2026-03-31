@@ -16,8 +16,11 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+    DEFAULT_LEADERBOARD_BAR_COLOR,
+    LEADERBOARD_BAR_COLORS,
+} from '@/lib/user-portal-constants'
 import { cn } from '@/lib/utils'
 
 interface UserPortalResponse {
@@ -34,6 +37,7 @@ interface UserPortalResponse {
             createdAt: string | null
             showNameOnLeaderboard: boolean
             leaderboardNickname: string | null
+            leaderboardColor: string | null
         }
         overview: {
             totalCost: number
@@ -58,6 +62,7 @@ interface LeaderboardResponse {
             userId: string
             displayName: string
             isAnonymous: boolean
+            leaderboardColor: string | null
             totalCalls: number
             totalTokens: number
             totalCost: number
@@ -279,7 +284,8 @@ function getLeaderboardChartOption(
                     itemStyle: {
                         color: user.isAnonymous
                             ? 'hsl(220 15% 75%)'
-                            : 'hsl(220 70% 55%)',
+                            : user.leaderboardColor ||
+                              DEFAULT_LEADERBOARD_BAR_COLOR,
                         borderRadius: [3, 3, 0, 0],
                     },
                 })),
@@ -311,6 +317,9 @@ export default function LeaderboardPage() {
     const [metric, setMetric] = useState<LeaderboardMetric>('cost')
     const [showNameOnLeaderboard, setShowNameOnLeaderboard] = useState(false)
     const [leaderboardNickname, setLeaderboardNickname] = useState('')
+    const [leaderboardColor, setLeaderboardColor] = useState<string>(
+        DEFAULT_LEADERBOARD_BAR_COLOR
+    )
     const [saving, setSaving] = useState(false)
     const router = useRouter()
     const { t } = useTranslation('common')
@@ -342,6 +351,10 @@ export default function LeaderboardPage() {
                 setLeaderboardNickname(
                     payload.data.profile.leaderboardNickname ||
                         payload.data.profile.name
+                )
+                setLeaderboardColor(
+                    payload.data.profile.leaderboardColor ||
+                        DEFAULT_LEADERBOARD_BAR_COLOR
                 )
                 setProfileReady(true)
             } catch (error) {
@@ -458,6 +471,7 @@ export default function LeaderboardPage() {
                 body: JSON.stringify({
                     showNameOnLeaderboard,
                     leaderboardNickname: normalizedNickname,
+                    leaderboardColor,
                 }),
             })
 
@@ -480,6 +494,7 @@ export default function LeaderboardPage() {
                     ...accountData.profile,
                     showNameOnLeaderboard,
                     leaderboardNickname: normalizedNickname,
+                    leaderboardColor,
                 },
             })
             setLeaderboardNickname(
@@ -536,16 +551,16 @@ export default function LeaderboardPage() {
     }
 
     const savedNickname = accountData.profile.leaderboardNickname || null
+    const savedColor =
+        accountData.profile.leaderboardColor || DEFAULT_LEADERBOARD_BAR_COLOR
     const nextNickname = normalizeLeaderboardNickname(
         leaderboardNickname,
         accountData.profile.name
     )
     const hasPendingChanges =
         showNameOnLeaderboard !== accountData.profile.showNameOnLeaderboard ||
-        nextNickname !== savedNickname
-    const currentDisplayName = showNameOnLeaderboard
-        ? leaderboardNickname.trim() || accountData.profile.name
-        : t('userPortal.leaderboard.anonymous')
+        nextNickname !== savedNickname ||
+        leaderboardColor !== savedColor
     const joinedAt =
         accountData.overview.firstUseTime || accountData.profile.createdAt
 
@@ -569,18 +584,43 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <label className="flex items-center gap-2 text-xs shrink-0">
-                    <Checkbox
-                        checked={showNameOnLeaderboard}
-                        onCheckedChange={(checked) =>
-                            setShowNameOnLeaderboard(checked === true)
-                        }
-                    />
-                    <span>{t('userPortal.leaderboard.settings.showName')}</span>
-                </label>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div className="flex items-center gap-3">
+                    <div className="space-y-1.5 shrink-0">
+                        <label className="flex items-center gap-2 text-xs">
+                            <Checkbox
+                                checked={showNameOnLeaderboard}
+                                onCheckedChange={(checked) =>
+                                    setShowNameOnLeaderboard(checked === true)
+                                }
+                            />
+                            <span>
+                                {t('userPortal.leaderboard.settings.showName')}
+                            </span>
+                        </label>
 
-                <div className="flex flex-1 items-center gap-3">
+                        {showNameOnLeaderboard && (
+                            <div className="ml-7 flex items-center gap-2">
+                                {LEADERBOARD_BAR_COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        aria-label={`${t('userPortal.leaderboard.settings.barColor')} ${color}`}
+                                        onClick={() =>
+                                            setLeaderboardColor(color)
+                                        }
+                                        className={cn(
+                                            'h-4 w-4 border border-border transition-all',
+                                            leaderboardColor === color &&
+                                                'ring-2 ring-foreground ring-offset-1 ring-offset-background'
+                                        )}
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <Input
                         id="leaderboard-nickname"
                         maxLength={40}

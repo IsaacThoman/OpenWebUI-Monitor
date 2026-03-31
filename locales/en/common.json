@@ -439,6 +439,7 @@
                 "showNameHint": "Users who leave this off appear as Anonymous.",
                 "nickname": "Leaderboard nickname",
                 "nicknamePlaceholder": "How other users should see you",
+                "barColor": "Bar color",
                 "helper": "Leave the nickname blank to use your account name.",
                 "currentLabel": "Current display",
                 "save": "Save changes",
