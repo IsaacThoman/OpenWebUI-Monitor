@@ -459,49 +459,56 @@ export default function PersonalPage() {
                         {formatCurrency(data.profile.balance, currencySymbol)}
                     </p>
                 </div>
-                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-                    <p className="mb-1 text-xs text-muted-foreground">
-                        {t('userPortal.account.overview.totalSpend')}
-                    </p>
-                    <p className="text-2xl font-medium">
-                        {formatCurrency(
-                            data.overview.totalCost,
-                            currencySymbol
-                        )}
-                    </p>
-                </div>
-                <div className="min-w-[170px] border-t pt-3 md:border-l md:border-t-0 md:pl-5 md:pt-0">
-                    <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <p className="mb-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
-                                    Lifetime water use
-                                    <Info className="h-3 w-3" />
-                                </p>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p className="max-w-[300px]">
-                                    Based on Altman&apos;s estimate where a
-                                    query uses 1/15 tsp of water & assumes
-                                    typical prompt cost ~$0.002 (common medical
-                                    question to gpt-5 mini in flex mode)
-                                </p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                    <p className="text-2xl font-medium">
-                        {(data.overview.totalCost / 23.04).toFixed(4)} Gal
-                    </p>
-                </div>
             </div>
 
             <div className="mb-4">
                 <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-xs font-medium">
-                            Usage overview
-                        </span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-3 w-3" />
+                            <span className="text-xs font-medium">
+                                Usage overview
+                            </span>
+                        </div>
+                        <div className="w-px h-4 bg-border" />
+                        <div className="flex gap-1">
+                            <Button
+                                variant={
+                                    dailyUsageMetric === 'cost'
+                                        ? 'default'
+                                        : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setDailyUsageMetric('cost')}
+                            >
+                                USD
+                            </Button>
+                            <Button
+                                variant={
+                                    dailyUsageMetric === 'tokens'
+                                        ? 'default'
+                                        : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setDailyUsageMetric('tokens')}
+                            >
+                                Tokens
+                            </Button>
+                            <Button
+                                variant={
+                                    dailyUsageMetric === 'calls'
+                                        ? 'default'
+                                        : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setDailyUsageMetric('calls')}
+                            >
+                                Calls
+                            </Button>
+                        </div>
                     </div>
                     <div className="flex gap-1">
                         <Button
@@ -551,43 +558,6 @@ export default function PersonalPage() {
                             onClick={() => handleTimeRangeChange('all')}
                         >
                             All
-                        </Button>
-                        <div className="w-px h-7 bg-border mx-1" />
-                        <Button
-                            variant={
-                                dailyUsageMetric === 'cost'
-                                    ? 'default'
-                                    : 'outline'
-                            }
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            onClick={() => setDailyUsageMetric('cost')}
-                        >
-                            USD
-                        </Button>
-                        <Button
-                            variant={
-                                dailyUsageMetric === 'tokens'
-                                    ? 'default'
-                                    : 'outline'
-                            }
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            onClick={() => setDailyUsageMetric('tokens')}
-                        >
-                            Tokens
-                        </Button>
-                        <Button
-                            variant={
-                                dailyUsageMetric === 'calls'
-                                    ? 'default'
-                                    : 'outline'
-                            }
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            onClick={() => setDailyUsageMetric('calls')}
-                        >
-                            Calls
                         </Button>
                     </div>
                 </div>
