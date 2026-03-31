@@ -4,12 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ECharts } from 'echarts'
 import ReactECharts from 'echarts-for-react'
-import {
-    BarChartOutlined,
-    DollarOutlined,
-    LineChartOutlined,
-} from '@ant-design/icons'
-import { BarChart3, ChevronDown, Clock, Loader2, Save } from 'lucide-react'
+import { BarChart3, Clock, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -72,7 +67,7 @@ interface LeaderboardResponse {
 }
 
 type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
-type LeaderboardMetric = 'cost' | 'tokens' | 'calls'
+type LeaderboardMetric = 'cost' | 'tokens' | 'calls' | 'water'
 
 function formatCurrency(value: number, currencySymbol: string): string {
     return `${currencySymbol}${value.toFixed(4)}`
@@ -151,6 +146,10 @@ function getMetricValue(
         return user.totalCalls
     }
 
+    if (metric === 'water') {
+        return user.totalCost / 23.04
+    }
+
     return user.totalCost
 }
 
@@ -161,6 +160,10 @@ function formatMetricValue(
 ): string {
     if (metric === 'cost') {
         return formatCurrency(value, currencySymbol)
+    }
+
+    if (metric === 'water') {
+        return `${value.toFixed(4)} Gal`
     }
 
     return formatNumber(value)
@@ -199,7 +202,7 @@ function getLeaderboardChartOption(
           <div class="flex flex-col gap-1">
             <div class="font-medium" style="color: hsl(220 15% 90%)">#${dataIndex + 1} ${user.displayName}</div>
             <div class="flex items-center gap-2">
-              <span class="text-xs" style="color: hsl(220 15% 55%)">${metric === 'cost' ? 'USD' : metric === 'tokens' ? 'Tokens' : 'Calls'}</span>
+              <span class="text-xs" style="color: hsl(220 15% 55%)">${metric === 'cost' ? 'USD' : metric === 'tokens' ? 'Tokens' : metric === 'water' ? 'Water' : 'Calls'}</span>
               <span class="font-mono text-sm font-medium" style="color: hsl(220 15% 90%)">${formatMetricValue(value, metric, currencySymbol)}</span>
             </div>
           </div>
@@ -265,6 +268,10 @@ function getLeaderboardChartOption(
                 formatter: (value: number) => {
                     if (metric === 'cost') {
                         return `${currencySymbol}${value.toFixed(1)}`
+                    }
+
+                    if (metric === 'water') {
+                        return `${value.toFixed(2)}`
                     }
 
                     if (value >= 1000) {
@@ -659,45 +666,118 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
-            <div className="border">
-                <div className="flex items-center justify-between border-b px-3 py-2">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-xs font-medium">
-                            {t('userPortal.leaderboard.overview.title')}
-                        </span>
+            <div className="mb-4">
+                <div className="flex items-center justify-between px-3 py-2">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-3 w-3" />
+                            <span className="text-xs font-medium">
+                                {t('userPortal.leaderboard.overview.title')}
+                            </span>
+                        </div>
+                        <div className="w-px h-4 bg-border" />
+                        <div className="flex gap-1">
+                            <Button
+                                variant={
+                                    metric === 'cost' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setMetric('cost')}
+                            >
+                                {t('userPortal.leaderboard.chart.metrics.usd')}
+                            </Button>
+                            <Button
+                                variant={
+                                    metric === 'tokens' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setMetric('tokens')}
+                            >
+                                {t(
+                                    'userPortal.leaderboard.chart.metrics.tokens'
+                                )}
+                            </Button>
+                            <Button
+                                variant={
+                                    metric === 'calls' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setMetric('calls')}
+                            >
+                                {t(
+                                    'userPortal.leaderboard.chart.metrics.calls'
+                                )}
+                            </Button>
+                            <Button
+                                variant={
+                                    metric === 'water' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setMetric('water')}
+                            >
+                                Water
+                            </Button>
+                        </div>
                     </div>
-                    <div className="relative">
-                        <select
-                            value={timeRange}
-                            onChange={(event) =>
-                                setTimeRange(event.target.value as TimeRange)
+                    <div className="flex gap-1">
+                        <Button
+                            variant={
+                                timeRange === '24h' ? 'default' : 'outline'
                             }
-                            className="appearance-none border bg-background px-2 py-1 pr-6 text-xs focus:outline-none"
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setTimeRange('24h')}
                         >
-                            <option value="24h">
-                                {t('userPortal.leaderboard.periods.24h')}
-                            </option>
-                            <option value="7d">
-                                {t('userPortal.leaderboard.periods.7d')}
-                            </option>
-                            <option value="30d">
-                                {t('userPortal.leaderboard.periods.30d')}
-                            </option>
-                            <option value="90d">
-                                {t('userPortal.leaderboard.periods.90d')}
-                            </option>
-                            <option value="all">
-                                {t('userPortal.leaderboard.periods.all')}
-                            </option>
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                            24h
+                        </Button>
+                        <Button
+                            variant={timeRange === '7d' ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setTimeRange('7d')}
+                        >
+                            7d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === '30d' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setTimeRange('30d')}
+                        >
+                            30d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === '90d' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setTimeRange('90d')}
+                        >
+                            90d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === 'all' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setTimeRange('all')}
+                        >
+                            All
+                        </Button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 divide-y sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 md:gap-0 md:divide-x">
                     <div className="p-3">
-                        <p className="mb-1 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mb-1">
                             {t('userPortal.leaderboard.overview.calls')}
                         </p>
                         <p className="text-lg font-medium">
@@ -709,7 +789,7 @@ export default function LeaderboardPage() {
                         </p>
                     </div>
                     <div className="p-3">
-                        <p className="mb-1 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mb-1">
                             {t('userPortal.leaderboard.overview.tokens')}
                         </p>
                         <p className="text-lg font-medium">
@@ -721,7 +801,7 @@ export default function LeaderboardPage() {
                         </p>
                     </div>
                     <div className="p-3">
-                        <p className="mb-1 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mb-1">
                             {t('userPortal.leaderboard.overview.spend')}
                         </p>
                         <p className="text-lg font-medium">
@@ -734,7 +814,7 @@ export default function LeaderboardPage() {
                         </p>
                     </div>
                     <div className="p-3">
-                        <p className="mb-1 text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mb-1">
                             {t('userPortal.leaderboard.overview.averageCost')}
                         </p>
                         <p className="text-lg font-medium">
@@ -746,10 +826,20 @@ export default function LeaderboardPage() {
                                   )}
                         </p>
                     </div>
+                    <div className="p-3">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            Water use
+                        </p>
+                        <p className="text-lg font-medium">
+                            {loadingLeaderboard
+                                ? '-'
+                                : `${((leaderboardData?.totalCost || 0) / 23.04).toFixed(4)} Gal`}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="border overflow-hidden">
+            <div className="overflow-hidden">
                 <div className="space-y-4 p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="flex flex-1 items-center gap-2">
@@ -757,60 +847,6 @@ export default function LeaderboardPage() {
                             <h2 className="text-sm font-medium">
                                 {t('userPortal.leaderboard.chart.title')}
                             </h2>
-                        </div>
-
-                        <div className="sm:ml-auto">
-                            <div
-                                className={cn(
-                                    'flex w-full gap-1 border bg-muted p-1 sm:w-[320px]',
-                                    'border-border'
-                                )}
-                            >
-                                <button
-                                    onClick={() => setMetric('cost')}
-                                    className={cn(
-                                        'relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
-                                        metric === 'cost'
-                                            ? 'border border-border bg-background text-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                >
-                                    <DollarOutlined className="text-[12px]" />
-                                    {t(
-                                        'userPortal.leaderboard.chart.metrics.usd'
-                                    )}
-                                </button>
-
-                                <button
-                                    onClick={() => setMetric('tokens')}
-                                    className={cn(
-                                        'relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
-                                        metric === 'tokens'
-                                            ? 'border border-border bg-background text-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                >
-                                    <BarChartOutlined className="text-[12px]" />
-                                    {t(
-                                        'userPortal.leaderboard.chart.metrics.tokens'
-                                    )}
-                                </button>
-
-                                <button
-                                    onClick={() => setMetric('calls')}
-                                    className={cn(
-                                        'relative inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors',
-                                        metric === 'calls'
-                                            ? 'border border-border bg-background text-foreground'
-                                            : 'text-muted-foreground hover:text-foreground'
-                                    )}
-                                >
-                                    <LineChartOutlined className="text-[12px]" />
-                                    {t(
-                                        'userPortal.leaderboard.chart.metrics.calls'
-                                    )}
-                                </button>
-                            </div>
                         </div>
                     </div>
 
