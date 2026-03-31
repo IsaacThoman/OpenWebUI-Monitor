@@ -206,6 +206,8 @@ const getBarOption = (
             axisPointer: {
                 type: 'shadow',
             },
+            confine: false,
+            appendToBody: true,
             backgroundColor: 'hsl(220 15% 12%)',
             borderColor: 'hsl(220 15% 18%)',
             borderWidth: 1,
