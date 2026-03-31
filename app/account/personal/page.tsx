@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BarChart3, ChevronDown, Clock, Info, Loader2, Zap } from 'lucide-react'
+import { BarChart3, Clock, Info, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -29,8 +29,8 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-
 interface UserPortalResponse {
     success: boolean
     error?: string
@@ -495,35 +495,104 @@ export default function PersonalPage() {
                 </div>
             </div>
 
-            <div className="mb-4 border">
-                <div className="flex items-center justify-between border-b px-3 py-2">
+            <div className="mb-4">
+                <div className="flex items-center justify-between px-3 py-2">
                     <div className="flex items-center gap-2">
                         <Clock className="h-3 w-3" />
                         <span className="text-xs font-medium">
                             Usage overview
                         </span>
                     </div>
-                    <div className="relative">
-                        <select
-                            value={timeRange}
-                            onChange={(e) =>
-                                handleTimeRangeChange(
-                                    e.target.value as TimeRange
-                                )
+                    <div className="flex gap-1">
+                        <Button
+                            variant={
+                                timeRange === '24h' ? 'default' : 'outline'
                             }
-                            className="appearance-none bg-background border px-2 py-1 pr-6 text-xs focus:outline-none"
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleTimeRangeChange('24h')}
                         >
-                            <option value="24h">24 hours</option>
-                            <option value="7d">7 days</option>
-                            <option value="30d">30 days</option>
-                            <option value="90d">90 days</option>
-                            <option value="all">All time</option>
-                        </select>
-                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 pointer-events-none text-muted-foreground" />
+                            24h
+                        </Button>
+                        <Button
+                            variant={timeRange === '7d' ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleTimeRangeChange('7d')}
+                        >
+                            7d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === '30d' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleTimeRangeChange('30d')}
+                        >
+                            30d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === '90d' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleTimeRangeChange('90d')}
+                        >
+                            90d
+                        </Button>
+                        <Button
+                            variant={
+                                timeRange === 'all' ? 'default' : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleTimeRangeChange('all')}
+                        >
+                            All
+                        </Button>
+                        <div className="w-px h-7 bg-border mx-1" />
+                        <Button
+                            variant={
+                                dailyUsageMetric === 'cost'
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setDailyUsageMetric('cost')}
+                        >
+                            USD
+                        </Button>
+                        <Button
+                            variant={
+                                dailyUsageMetric === 'tokens'
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setDailyUsageMetric('tokens')}
+                        >
+                            Tokens
+                        </Button>
+                        <Button
+                            variant={
+                                dailyUsageMetric === 'calls'
+                                    ? 'default'
+                                    : 'outline'
+                            }
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setDailyUsageMetric('calls')}
+                        >
+                            Calls
+                        </Button>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 md:gap-0 md:divide-x">
                     <div className="p-3">
                         <p className="text-xs text-muted-foreground mb-1">
                             Calls
@@ -568,6 +637,32 @@ export default function PersonalPage() {
                                       stats.averageCost,
                                       currencySymbol
                                   )}
+                        </p>
+                    </div>
+                    <div className="p-3">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <p className="mb-1 flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                                        Water use
+                                        <Info className="h-3 w-3" />
+                                    </p>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="max-w-[300px]">
+                                        Based on Altman&apos;s estimate where a
+                                        query uses 1/15 tsp of water & assumes
+                                        typical prompt cost ~$0.002 (common
+                                        medical question to gpt-5 mini in flex
+                                        mode)
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                        <p className="text-lg font-medium">
+                            {statsLoading
+                                ? '-'
+                                : `${(stats.totalCost / 23.04).toFixed(4)} Gal`}
                         </p>
                     </div>
                 </div>

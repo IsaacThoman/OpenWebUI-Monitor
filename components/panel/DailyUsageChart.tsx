@@ -5,12 +5,6 @@ import { Skeleton } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { ECharts } from 'echarts'
 import { useTranslation } from 'react-i18next'
-import {
-    BarChartOutlined,
-    DollarOutlined,
-    LineChartOutlined,
-} from '@ant-design/icons'
-import { cn } from '@/lib/utils'
 import ContributionGraph from './ContributionGraph'
 
 interface ModelUsage {
@@ -33,7 +27,7 @@ interface DailyUsageChartProps {
     data: DailyUsage[]
     periodDayCount: number
     metric: 'cost' | 'tokens' | 'calls'
-    onMetricChange: (metric: 'cost' | 'tokens' | 'calls') => void
+    onMetricChange?: (metric: 'cost' | 'tokens' | 'calls') => void
     contributionData?: DailyUsage[]
     contributionLoading?: boolean
 }
@@ -366,7 +360,6 @@ export default function DailyUsageChart({
     data,
     periodDayCount,
     metric,
-    onMetricChange,
     contributionData,
     contributionLoading,
 }: DailyUsageChartProps) {
@@ -448,61 +441,11 @@ export default function DailyUsageChart({
     }, [metric, data, globalModels, t])
 
     return (
-        <div className="border overflow-hidden">
+        <div className="overflow-hidden">
             <div className="p-4 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex items-center gap-2 flex-1">
                         <h3 className="text-sm font-medium">{title}</h3>
-                    </div>
-                    <div className="sm:ml-auto">
-                        <div
-                            className={cn(
-                                'flex gap-1 w-full sm:w-[320px] p-1 border',
-                                'bg-muted border-border'
-                            )}
-                        >
-                            <button
-                                onClick={() => onMetricChange('cost')}
-                                className={cn(
-                                    'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-                                    'transition-colors',
-                                    metric === 'cost'
-                                        ? 'bg-background text-foreground border border-border'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                )}
-                            >
-                                <DollarOutlined className="text-[12px]" />
-                                USD
-                            </button>
-
-                            <button
-                                onClick={() => onMetricChange('tokens')}
-                                className={cn(
-                                    'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-                                    'transition-colors',
-                                    metric === 'tokens'
-                                        ? 'bg-background text-foreground border border-border'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                )}
-                            >
-                                <BarChartOutlined className="text-[12px]" />
-                                Tokens
-                            </button>
-
-                            <button
-                                onClick={() => onMetricChange('calls')}
-                                className={cn(
-                                    'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium',
-                                    'transition-colors',
-                                    metric === 'calls'
-                                        ? 'bg-background text-foreground border border-border'
-                                        : 'text-muted-foreground hover:text-foreground'
-                                )}
-                            >
-                                <LineChartOutlined className="text-[12px]" />
-                                Calls
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -532,8 +475,8 @@ export default function DailyUsageChart({
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 gap-px border bg-border sm:grid-cols-3">
-                            <div className="bg-background px-4 py-3">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:divide-x">
+                            <div className="px-4 py-3">
                                 <p className="text-xs text-muted-foreground">
                                     Avg. spend per day
                                 </p>
@@ -545,7 +488,7 @@ export default function DailyUsageChart({
                                     )}
                                 </p>
                             </div>
-                            <div className="bg-background px-4 py-3">
+                            <div className="px-4 py-3">
                                 <p className="text-xs text-muted-foreground">
                                     Avg. tokens per day
                                 </p>
@@ -557,7 +500,7 @@ export default function DailyUsageChart({
                                     )}
                                 </p>
                             </div>
-                            <div className="bg-background px-4 py-3">
+                            <div className="px-4 py-3">
                                 <p className="text-xs text-muted-foreground">
                                     Avg. calls per day
                                 </p>
