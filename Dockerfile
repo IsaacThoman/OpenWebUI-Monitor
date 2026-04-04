@@ -35,5 +35,8 @@ RUN pnpm build
 # 暴露端口
 EXPOSE 3000
 
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
+    CMD wget -q -O /dev/null http://localhost:3000/api/health || exit 1
+
 # 使用启动脚本
 CMD ["./start.sh"]
