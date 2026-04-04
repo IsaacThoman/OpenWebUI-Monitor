@@ -5,6 +5,9 @@ import { Skeleton } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import type { ECharts } from 'echarts'
 import { useTranslation } from 'react-i18next'
+
+import { compareDayKeys, formatDayKey } from '@/lib/date/day-key'
+
 import ContributionGraph from './ContributionGraph'
 
 interface ModelUsage {
@@ -80,8 +83,7 @@ function getMetricTitle(metric: 'cost' | 'tokens' | 'calls'): string {
 }
 
 const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr)
-    return date.toLocaleDateString(undefined, {
+    return formatDayKey(dateStr, {
         month: 'short',
         day: 'numeric',
     })
@@ -107,9 +109,7 @@ const getBarOption = (
     globalModels: string[],
     t: (key: string) => string
 ) => {
-    const sortedData = [...data].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    )
+    const sortedData = [...data].sort((a, b) => compareDayKeys(a.date, b.date))
     const trackedModels = globalModels.filter(
         (modelName) => modelName !== 'Other'
     )
@@ -220,8 +220,7 @@ const getBarOption = (
             formatter: (params: TooltipParam[]) => {
                 const dataIndex = params[0]?.dataIndex ?? 0
                 const day = sortedData[dataIndex]
-                const date = new Date(day.date)
-                const dateStr = date.toLocaleDateString(undefined, {
+                const dateStr = formatDayKey(day.date, {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',

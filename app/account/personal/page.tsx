@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, Clock, Info, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
@@ -251,9 +251,16 @@ export default function PersonalPage() {
         }>
     >([])
     const [contributionLoading, setContributionLoading] = useState(true)
+    const [browserTimeZone, setBrowserTimeZone] = useState<string | null>(null)
     const router = useRouter()
     const { t } = useTranslation('common')
     const currencySymbol = t('common.currency')
+
+    useEffect(() => {
+        setBrowserTimeZone(
+            Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+        )
+    }, [])
 
     useEffect(() => {
         const loadAccount = async () => {
@@ -287,86 +294,102 @@ export default function PersonalPage() {
         loadAccount()
     }, [router, t])
 
-    const fetchTimeRangeStats = async (
-        range: TimeRange,
-        page: number,
-        pageSize: number
-    ) => {
-        setStatsLoading(true)
-        try {
-            let days: number
-            switch (range) {
-                case '24h':
-                    days = 1
-                    break
-                case '7d':
-                    days = 7
-                    break
-                case '30d':
-                    days = 30
-                    break
-                case '90d':
-                    days = 90
-                    break
-                case 'all':
-                    days = 0
-                    break
-                default:
-                    days = 30
-            }
+    const fetchTimeRangeStats = useCallback(
+        async (range: TimeRange, page: number, pageSize: number) => {
+            setStatsLoading(true)
+            try {
+                let days: number
+                switch (range) {
+                    case '24h':
+                        days = 1
+                        break
+                    case '7d':
+                        days = 7
+                        break
+                    case '30d':
+                        days = 30
+                        break
+                    case '90d':
+                        days = 90
+                        break
+                    case 'all':
+                        days = 0
+                        break
+                    default:
+                        days = 30
+                }
 
-            const params = new URLSearchParams({
-                page: String(page),
-                pageSize: String(pageSize),
-            })
-
-            if (days > 0) {
-                params.set('days', String(days))
-            }
-
-            const url = `/api/v1/user-portal/stats?${params.toString()}`
-
-            const response = await fetch(url)
-            if (!response.ok) throw new Error('Failed to fetch stats')
-
-            const result = await response.json()
-            if (result.data) {
-                setStats({
-                    totalCalls: result.data.totalCalls || 0,
-                    totalTokens: result.data.totalTokens || 0,
-                    totalCost: result.data.totalCost || 0,
-                    averageCost: result.data.averageCost || 0,
+                const params = new URLSearchParams({
+                    page: String(page),
+                    pageSize: String(pageSize),
                 })
-                setRecentRecords(result.data.recentRecords || [])
-                setRecentRecordsTotal(
-                    result.data.recentRecordsPagination?.total || 0
-                )
-                setRecentRecordsTotalPages(
-                    result.data.recentRecordsPagination?.totalPages || 1
-                )
-                setTopModels(result.data.topModels || [])
-                setDailyUsage(result.data.dailyUsage || [])
+
+                if (days > 0) {
+                    params.set('days', String(days))
+                }
+
+                params.set('timezone', browserTimeZone || 'UTC')
+
+                const url = `/api/v1/user-portal/stats?${params.toString()}`
+
+                const response = await fetch(url)
+                if (!response.ok) throw new Error('Failed to fetch stats')
+
+                const result = await response.json()
+                if (result.data) {
+                    setStats({
+                        totalCalls: result.data.totalCalls || 0,
+                        totalTokens: result.data.totalTokens || 0,
+                        totalCost: result.data.totalCost || 0,
+                        averageCost: result.data.averageCost || 0,
+                    })
+                    setRecentRecords(result.data.recentRecords || [])
+                    setRecentRecordsTotal(
+                        result.data.recentRecordsPagination?.total || 0
+                    )
+                    setRecentRecordsTotalPages(
+                        result.data.recentRecordsPagination?.totalPages || 1
+                    )
+                    setTopModels(result.data.topModels || [])
+                    setDailyUsage(result.data.dailyUsage || [])
+                }
+            } catch {
+                // Keep existing stats on error
+            } finally {
+                setStatsLoading(false)
             }
-        } catch {
-            // Keep existing stats on error
-        } finally {
-            setStatsLoading(false)
-        }
-    }
+        },
+        [browserTimeZone]
+    )
 
     useEffect(() => {
+        if (!browserTimeZone) {
+            return
+        }
+
         fetchTimeRangeStats(timeRange, recentRecordsPage, recentRecordsPageSize)
-    }, [timeRange, recentRecordsPage, recentRecordsPageSize])
+    }, [
+        browserTimeZone,
+        fetchTimeRangeStats,
+        timeRange,
+        recentRecordsPage,
+        recentRecordsPageSize,
+    ])
 
     // Fetch full year of daily data for the contribution graph
     useEffect(() => {
         const fetchContributionData = async () => {
+            if (!browserTimeZone) {
+                return
+            }
+
             setContributionLoading(true)
             try {
                 const params = new URLSearchParams({
                     days: '365',
                     page: '1',
                     pageSize: '1',
+                    timezone: browserTimeZone,
                 })
                 const response = await fetch(
                     `/api/v1/user-portal/stats?${params.toString()}`
@@ -383,7 +406,7 @@ export default function PersonalPage() {
             }
         }
         fetchContributionData()
-    }, [])
+    }, [browserTimeZone])
 
     const paginationItems = getPaginationItems(
         recentRecordsPage,

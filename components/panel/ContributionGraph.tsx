@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useCallback, useRef } from 'react'
 
+import { formatDayKey, normalizeDayKey } from '@/lib/date/day-key'
+
 interface DailyData {
     date: string
     totalCost: number
@@ -118,7 +120,12 @@ export default function ContributionGraph({
     const dataMap = useMemo(() => {
         const map = new Map<string, DailyData>()
         for (const day of data) {
-            const dateStr = day.date.slice(0, 10)
+            const dateStr = normalizeDayKey(day.date)
+
+            if (!dateStr) {
+                continue
+            }
+
             map.set(dateStr, day)
         }
         return map
@@ -128,7 +135,13 @@ export default function ContributionGraph({
         const years = new Set<number>([currentYear])
 
         for (const day of data) {
-            const year = Number(day.date.slice(0, 4))
+            const dateStr = normalizeDayKey(day.date)
+
+            if (!dateStr) {
+                continue
+            }
+
+            const year = Number(dateStr.slice(0, 4))
             if (!Number.isNaN(year)) {
                 years.add(year)
             }
@@ -570,26 +583,20 @@ export default function ContributionGraph({
                                         )}
                                     </strong>{' '}
                                     on{' '}
-                                    {tooltip.day.date.toLocaleDateString(
-                                        undefined,
-                                        {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                        }
-                                    )}
+                                    {formatDayKey(tooltip.day.dateStr, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })}
                                 </>
                             ) : (
                                 <>
                                     No {getMetricLabel(metric)} on{' '}
-                                    {tooltip.day.date.toLocaleDateString(
-                                        undefined,
-                                        {
-                                            month: 'short',
-                                            day: 'numeric',
-                                            year: 'numeric',
-                                        }
-                                    )}
+                                    {formatDayKey(tooltip.day.dateStr, {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                    })}
                                 </>
                             )}
                         </div>

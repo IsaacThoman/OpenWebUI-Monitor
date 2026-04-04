@@ -5,6 +5,19 @@ import { getCurrentPortalUser } from '@/lib/user-portal'
 
 export const dynamic = 'force-dynamic'
 
+function getTimeZone(value: string | null): string {
+    if (!value) {
+        return 'UTC'
+    }
+
+    try {
+        Intl.DateTimeFormat(undefined, { timeZone: value })
+        return value
+    } catch {
+        return 'UTC'
+    }
+}
+
 export async function GET(request: Request) {
     try {
         const user = await getCurrentPortalUser()
@@ -21,6 +34,7 @@ export async function GET(request: Request) {
         const days = searchParams.get('days')
         const page = parseInt(searchParams.get('page') || '1', 10)
         const pageSize = parseInt(searchParams.get('pageSize') || '10', 10)
+        const timeZone = getTimeZone(searchParams.get('timezone'))
 
         let daysNum: number | undefined
         if (days) {
@@ -51,7 +65,8 @@ export async function GET(request: Request) {
             user.id,
             daysNum,
             page,
-            pageSize
+            pageSize,
+            timeZone
         )
 
         return NextResponse.json({ success: true, data: stats })

@@ -4,6 +4,7 @@ import {
     DEFAULT_LEADERBOARD_BAR_COLOR,
     LEADERBOARD_BAR_COLORS,
 } from '@/lib/user-portal-constants'
+import { compareDayKeys } from '@/lib/date/day-key'
 
 import { query } from './client'
 
@@ -640,7 +641,8 @@ export async function getUserPortalStatsForTimeRange(
     userId: string,
     days?: number,
     page = 1,
-    pageSize = 10
+    pageSize = 10,
+    timeZone = 'UTC'
 ): Promise<{
     totalCalls: number
     totalTokens: number
@@ -680,12 +682,38 @@ export async function getUserPortalStatsForTimeRange(
 }> {
     await ensureUserTableExists()
 
-    const timeCondition = days
-        ? `AND u.use_time >= NOW() - INTERVAL '${days} days'`
-        : ''
     const safePage = Math.max(1, Math.floor(page))
     const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100)
     const offset = (safePage - 1) * safePageSize
+
+    const statsParams = days ? [userId, timeZone, days] : [userId]
+    const statsTimeCondition = days
+        ? `AND DATE(use_time AT TIME ZONE $2) >= DATE(NOW() AT TIME ZONE $2) - ($3::integer - 1)`
+        : ''
+
+    const dailyUsageParams = days
+        ? [userId, timeZone, days]
+        : [userId, timeZone]
+    const dailyUsageTimeCondition = days
+        ? `AND DATE(u.use_time AT TIME ZONE $2) >= DATE(NOW() AT TIME ZONE $2) - ($3::integer - 1)`
+        : ''
+
+    const topModelsParams = days ? [userId, timeZone, days] : [userId]
+    const topModelsTimeCondition = days
+        ? `AND DATE(u.use_time AT TIME ZONE $2) >= DATE(NOW() AT TIME ZONE $2) - ($3::integer - 1)`
+        : ''
+
+    const recordsCountParams = days ? [userId, timeZone, days] : [userId]
+    const recordsCountTimeCondition = days
+        ? `AND DATE(u.use_time AT TIME ZONE $2) >= DATE(NOW() AT TIME ZONE $2) - ($3::integer - 1)`
+        : ''
+
+    const recordsParams = days
+        ? [userId, safePageSize, offset, timeZone, days]
+        : [userId, safePageSize, offset]
+    const recordsTimeCondition = days
+        ? `AND DATE(u.use_time AT TIME ZONE $4) >= DATE(NOW() AT TIME ZONE $4) - ($5::integer - 1)`
+        : ''
 
     const [
         statsResult,
@@ -702,14 +730,14 @@ export async function getUserPortalStatsForTimeRange(
             COALESCE(SUM(input_tokens + output_tokens), 0) AS total_tokens
           FROM user_usage_records
           WHERE user_id = $1
-          ${timeCondition.replace(/u\./g, '')}
+          ${statsTimeCondition}
         `,
-            [userId]
+            statsParams
         ),
         query(
             `
           SELECT
-            DATE(use_time) as date,
+            DATE(u.use_time AT TIME ZONE $2) as date,
             COALESCE(mp.name, u.model_name) as display_name,
             COALESCE(SUM(u.cost), 0) AS total_cost,
             COALESCE(SUM(u.input_tokens + u.output_tokens), 0) AS total_tokens,
@@ -717,11 +745,11 @@ export async function getUserPortalStatsForTimeRange(
           FROM user_usage_records u
           LEFT JOIN model_prices mp ON u.model_name = mp.id
           WHERE u.user_id = $1
-          ${timeCondition}
-          GROUP BY DATE(use_time), COALESCE(mp.name, u.model_name)
-          ORDER BY DATE(use_time) ASC, total_cost DESC
+          ${dailyUsageTimeCondition}
+          GROUP BY DATE(u.use_time AT TIME ZONE $2), COALESCE(mp.name, u.model_name)
+          ORDER BY DATE(u.use_time AT TIME ZONE $2) ASC, total_cost DESC
         `,
-            [userId]
+            dailyUsageParams
         ),
         query(
             `
@@ -732,21 +760,21 @@ export async function getUserPortalStatsForTimeRange(
           FROM user_usage_records u
           LEFT JOIN model_prices mp ON u.model_name = mp.id
           WHERE u.user_id = $1
-          ${timeCondition}
+          ${topModelsTimeCondition}
           GROUP BY COALESCE(mp.name, u.model_name)
           ORDER BY total_cost DESC, total_calls DESC
           LIMIT 5
         `,
-            [userId]
+            topModelsParams
         ),
         query(
             `
           SELECT COUNT(*) AS total
           FROM user_usage_records u
           WHERE u.user_id = $1
-          ${timeCondition}
+          ${recordsCountTimeCondition}
         `,
-            [userId]
+            recordsCountParams
         ),
         query(
             `
@@ -762,11 +790,11 @@ export async function getUserPortalStatsForTimeRange(
           FROM user_usage_records u
           LEFT JOIN model_prices mp ON u.model_name = mp.id
           WHERE u.user_id = $1
-          ${timeCondition}
+          ${recordsTimeCondition}
           ORDER BY u.use_time DESC
           LIMIT $2 OFFSET $3
         `,
-            [userId, safePageSize, offset]
+            recordsParams
         ),
     ])
 
@@ -829,7 +857,7 @@ export async function getUserPortalStatsForTimeRange(
     }
 
     const dailyUsage = Array.from(dailyUsageMap.values())
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .sort((a, b) => compareDayKeys(a.date, b.date))
         .map((day) => ({
             date: day.date,
             totalCost: day.totalCost,
