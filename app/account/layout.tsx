@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import {
     BarChart3,
@@ -284,10 +285,6 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
     const activeTab = getActiveTab()
 
-    const handleTabClick = (tabId: TabId) => {
-        router.push(`/account/${tabId}`)
-    }
-
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
@@ -464,18 +461,21 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
                     <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                         {visibleTabs.map((tab) => (
-                            <button
+                            <Link
                                 key={tab.id}
-                                onClick={() => handleTabClick(tab.id)}
+                                href={`/account/${tab.id}`}
                                 className={`flex items-center gap-2 whitespace-nowrap border-b px-3 py-2 text-xs transition-colors ${
                                     activeTab === tab.id
                                         ? 'border-foreground text-foreground'
                                         : 'border-transparent text-muted-foreground hover:text-foreground'
                                 }`}
+                                aria-current={
+                                    activeTab === tab.id ? 'page' : undefined
+                                }
                             >
                                 {tab.icon}
                                 {tab.label}
-                            </button>
+                            </Link>
                         ))}
                     </div>
                 </div>
