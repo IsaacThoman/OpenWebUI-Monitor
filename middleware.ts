@@ -111,16 +111,6 @@ export async function middleware(request: NextRequest) {
     // Non-API pages
     if (!pathname.startsWith('/api/')) {
         if (isPublicPage(pathname)) {
-            if (pathname === '/account/login') {
-                const session = await getUserPortalSession(request)
-
-                if (session) {
-                    return NextResponse.redirect(
-                        new URL('/account/personal', request.url)
-                    )
-                }
-            }
-
             return NextResponse.next()
         }
 

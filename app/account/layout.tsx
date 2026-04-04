@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import {
@@ -73,6 +73,18 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
 
     const isAdmin = data?.profile.role === 'admin'
 
+    const redirectToLogin = useCallback(async () => {
+        try {
+            await fetch('/api/v1/user-portal/session', {
+                method: 'DELETE',
+            })
+        } catch {
+            // Best-effort cleanup for stale sessions.
+        }
+
+        router.replace('/account/login')
+    }, [router])
+
     useEffect(() => {
         if (isLoginRoute) {
             setLoading(false)
@@ -85,7 +97,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
                 const payload: UserPortalResponse = await response.json()
 
                 if (response.status === 401) {
-                    router.replace('/account/login')
+                    await redirectToLogin()
                     return
                 }
 
@@ -108,7 +120,7 @@ export default function AccountLayout({ children }: AccountLayoutProps) {
         }
 
         loadAccount()
-    }, [isLoginRoute, router, t])
+    }, [isLoginRoute, redirectToLogin, t])
 
     useEffect(() => {
         if (isLoginRoute) return
