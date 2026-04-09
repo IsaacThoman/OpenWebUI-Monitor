@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ECharts } from 'echarts'
 import ReactECharts from 'echarts-for-react'
-import { BarChart3, Clock, Loader2, Save } from 'lucide-react'
+import { BarChart3, Clock, Crown, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -45,6 +45,18 @@ interface UserPortalResponse {
     }
 }
 
+interface MostExpensiveCall {
+    userId: string
+    displayName: string
+    isAnonymous: boolean
+    modelName: string
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    cost: number
+    useTime: string
+}
+
 interface LeaderboardResponse {
     success: boolean
     error?: string
@@ -63,6 +75,7 @@ interface LeaderboardResponse {
             totalCost: number
             averageCost: number
         }>
+        mostExpensiveCall: MostExpensiveCall | null
     }
 }
 
@@ -886,6 +899,85 @@ export default function LeaderboardPage() {
                     )}
                 </div>
             </div>
+
+            {/* Most Expensive Call Section */}
+            {leaderboardData?.mostExpensiveCall && (
+                <div className="mb-4">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                        <h2 className="text-sm font-medium">
+                            {t('userPortal.leaderboard.mostExpensive.title')}
+                        </h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 md:gap-0 md:divide-x">
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.user')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {leaderboardData.mostExpensiveCall.isAnonymous
+                                    ? t('userPortal.leaderboard.anonymous')
+                                    : leaderboardData.mostExpensiveCall
+                                          .displayName}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t(
+                                    'userPortal.leaderboard.mostExpensive.model'
+                                )}
+                            </p>
+                            <p
+                                className="text-lg font-medium truncate"
+                                title={
+                                    leaderboardData.mostExpensiveCall.modelName
+                                }
+                            >
+                                {leaderboardData.mostExpensiveCall.modelName
+                                    .length > 20
+                                    ? `${leaderboardData.mostExpensiveCall.modelName.slice(0, 20)}...`
+                                    : leaderboardData.mostExpensiveCall
+                                          .modelName}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t(
+                                    'userPortal.leaderboard.mostExpensive.tokens'
+                                )}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {formatNumber(
+                                    leaderboardData.mostExpensiveCall
+                                        .totalTokens
+                                )}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.cost')}
+                            </p>
+                            <p className="text-lg font-medium text-yellow-500">
+                                {formatCurrency(
+                                    leaderboardData.mostExpensiveCall.cost,
+                                    currencySymbol
+                                )}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.time')}
+                            </p>
+                            <p className="text-sm font-medium">
+                                {formatDateOnly(
+                                    leaderboardData.mostExpensiveCall.useTime,
+                                    '-'
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

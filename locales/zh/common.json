@@ -480,7 +480,15 @@
                 "spend": "消费",
                 "averageCost": "平均/次"
             },
-            "anonymous": "Anonymous"
+            "anonymous": "Anonymous",
+            "mostExpensive": {
+                "title": "最贵的调用",
+                "user": "用户",
+                "model": "模型",
+                "tokens": "Tokens",
+                "cost": "费用",
+                "time": "日期"
+            }
         }
     }
 }

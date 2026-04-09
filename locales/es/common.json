@@ -480,7 +480,15 @@
                 "spend": "Gasto",
                 "averageCost": "Prom./llamada"
             },
-            "anonymous": "Anónimo"
+            "anonymous": "Anónimo",
+            "mostExpensive": {
+                "title": "Llamada Más Cara",
+                "user": "Usuario",
+                "model": "Modelo",
+                "tokens": "Tokens",
+                "cost": "Costo",
+                "time": "Fecha"
+            }
         }
     }
 }

@@ -478,7 +478,15 @@
                 "spend": "Spend",
                 "averageCost": "Avg/call"
             },
-            "anonymous": "Anonymous"
+            "anonymous": "Anonymous",
+            "mostExpensive": {
+                "title": "Most Expensive Call",
+                "user": "User",
+                "model": "Model",
+                "tokens": "Tokens",
+                "cost": "Cost",
+                "time": "Date"
+            }
         }
     }
 }

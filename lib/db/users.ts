@@ -91,6 +91,19 @@ export interface LeaderboardStats {
     totalCost: number
     averageCost: number
     users: LeaderboardEntry[]
+    mostExpensiveCall: MostExpensiveCall | null
+}
+
+export interface MostExpensiveCall {
+    userId: string
+    displayName: string
+    isAnonymous: boolean
+    modelName: string
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+    cost: number
+    useTime: string
 }
 
 function hashViewerToken(token: string): string {
@@ -896,6 +909,67 @@ export async function getUserPortalStatsForTimeRange(
     }
 }
 
+export async function getMostExpensiveCall(
+    days?: number
+): Promise<MostExpensiveCall | null> {
+    await ensureUserTableExists()
+
+    const queryParams: number[] = []
+    const timeCondition = days
+        ? `AND r.use_time >= NOW() - ($1 * INTERVAL '1 day')`
+        : ''
+
+    if (days) {
+        queryParams.push(days)
+    }
+
+    const result = await query(
+        `
+      SELECT
+        r.user_id,
+        u.name,
+        COALESCE(u.leaderboard_show_name, FALSE) AS leaderboard_show_name,
+        NULLIF(BTRIM(u.leaderboard_nickname), '') AS leaderboard_nickname,
+        COALESCE(mp.name, r.model_name) AS model_name,
+        r.input_tokens,
+        r.output_tokens,
+        r.cost,
+        r.use_time
+      FROM user_usage_records r
+      INNER JOIN users u ON u.id = r.user_id
+      LEFT JOIN model_prices mp ON r.model_name = mp.id
+      WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+      ${timeCondition}
+      ORDER BY r.cost DESC
+      LIMIT 1
+    `,
+        queryParams
+    )
+
+    if (result.rows.length === 0) {
+        return null
+    }
+
+    const row = result.rows[0]
+    const isAnonymous = !row.leaderboard_show_name
+
+    return {
+        userId: row.user_id,
+        displayName: isAnonymous
+            ? 'Anonymous'
+            : row.leaderboard_nickname || row.name,
+        isAnonymous,
+        modelName: row.model_name,
+        inputTokens: parseInt(row.input_tokens || '0'),
+        outputTokens: parseInt(row.output_tokens || '0'),
+        totalTokens:
+            parseInt(row.input_tokens || '0') +
+            parseInt(row.output_tokens || '0'),
+        cost: parseFloat(row.cost || '0'),
+        useTime: row.use_time,
+    }
+}
+
 export async function getLeaderboardStats(
     days?: number
 ): Promise<LeaderboardStats> {
@@ -910,7 +984,7 @@ export async function getLeaderboardStats(
         queryParams.push(days)
     }
 
-    const [statsResult, usersResult] = await Promise.all([
+    const [statsResult, usersResult, mostExpensiveCall] = await Promise.all([
         query(
             `
           SELECT
@@ -944,6 +1018,7 @@ export async function getLeaderboardStats(
         `,
             queryParams
         ),
+        getMostExpensiveCall(days),
     ])
 
     const stats = statsResult.rows[0]
@@ -979,5 +1054,6 @@ export async function getLeaderboardStats(
                     totalUserCalls > 0 ? totalUserCost / totalUserCalls : 0,
             }
         }),
+        mostExpensiveCall,
     }
 }
