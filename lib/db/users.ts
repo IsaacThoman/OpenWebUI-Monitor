@@ -776,7 +776,7 @@ export async function getUserPortalStatsForTimeRange(
           ${topModelsTimeCondition}
           GROUP BY COALESCE(mp.name, u.model_name)
           ORDER BY total_cost DESC, total_calls DESC
-          LIMIT 5
+          LIMIT 500
         `,
             topModelsParams
         ),

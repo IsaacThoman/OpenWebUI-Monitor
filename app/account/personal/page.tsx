@@ -870,7 +870,7 @@ export default function PersonalPage() {
                                 {t('userPortal.account.empty')}
                             </div>
                         ) : (
-                            <div className="divide-y">
+                            <div className="max-h-96 divide-y overflow-y-auto">
                                 {topModels.map((model, index) => (
                                     <div
                                         key={model.modelName}
