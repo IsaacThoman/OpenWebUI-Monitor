@@ -91,6 +91,27 @@ export interface LeaderboardStats {
     totalCost: number
     averageCost: number
     users: LeaderboardEntry[]
+    topModels: Array<{
+        modelName: string
+        totalCost: number
+        totalCalls: number
+    }>
+    recentRecords: Array<{
+        id: number
+        useTime: string
+        modelName: string
+        totalTokens: number
+        cost: number
+        balanceAfter: number
+        displayName: string
+        isAnonymous: boolean
+    }>
+    recentRecordsPagination: {
+        page: number
+        pageSize: number
+        total: number
+        totalPages: number
+    }
     mostExpensiveCall: MostExpensiveCall | null
 }
 
@@ -971,20 +992,41 @@ export async function getMostExpensiveCall(
 }
 
 export async function getLeaderboardStats(
-    days?: number
+    days?: number,
+    page = 1,
+    pageSize = 10
 ): Promise<LeaderboardStats> {
     await ensureUserTableExists()
 
+    const safePage = Math.max(1, Math.floor(page))
+    const safePageSize = Math.min(Math.max(1, Math.floor(pageSize)), 100)
+    const offset = (safePage - 1) * safePageSize
     const queryParams: number[] = []
     const timeCondition = days
         ? `AND r.use_time >= NOW() - ($1 * INTERVAL '1 day')`
         : ''
+    const recordsParams = days
+        ? [days, safePageSize, offset]
+        : [safePageSize, offset]
+    const recordsTimeCondition = days
+        ? `AND r.use_time >= NOW() - ($1 * INTERVAL '1 day')`
+        : ''
+    const recordsLimitOffset = days
+        ? 'LIMIT $2 OFFSET $3'
+        : 'LIMIT $1 OFFSET $2'
 
     if (days) {
         queryParams.push(days)
     }
 
-    const [statsResult, usersResult, mostExpensiveCall] = await Promise.all([
+    const [
+        statsResult,
+        usersResult,
+        topModelsResult,
+        recordsCountResult,
+        recordsResult,
+        mostExpensiveCall,
+    ] = await Promise.all([
         query(
             `
           SELECT
@@ -1018,12 +1060,67 @@ export async function getLeaderboardStats(
         `,
             queryParams
         ),
+        query(
+            `
+          SELECT
+            COALESCE(mp.name, r.model_name) AS display_name,
+            COALESCE(SUM(r.cost), 0) AS total_cost,
+            COUNT(*) AS total_calls
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          LEFT JOIN model_prices mp ON r.model_name = mp.id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${timeCondition}
+          GROUP BY COALESCE(mp.name, r.model_name)
+          ORDER BY total_cost DESC, total_calls DESC
+          LIMIT 500
+        `,
+            queryParams
+        ),
+        query(
+            `
+          SELECT COUNT(*) AS total
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${timeCondition}
+        `,
+            queryParams
+        ),
+        query(
+            `
+          SELECT
+            r.id,
+            r.use_time,
+            COALESCE(mp.name, r.model_name) AS model_name,
+            r.input_tokens,
+            r.output_tokens,
+            r.cost,
+            r.balance_after,
+            u.name,
+            COALESCE(u.leaderboard_show_name, FALSE) AS leaderboard_show_name,
+            NULLIF(BTRIM(u.leaderboard_nickname), '') AS leaderboard_nickname
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          LEFT JOIN model_prices mp ON r.model_name = mp.id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${recordsTimeCondition}
+          ORDER BY r.use_time DESC
+          ${recordsLimitOffset}
+        `,
+            recordsParams
+        ),
         getMostExpensiveCall(days),
     ])
 
     const stats = statsResult.rows[0]
     const totalCalls = parseInt(stats.total_calls || '0')
     const totalCost = parseFloat(stats.total_cost || '0')
+    const recentRecordsTotal = parseInt(recordsCountResult.rows[0].total || '0')
+    const recentRecordsTotalPages =
+        recentRecordsTotal > 0
+            ? Math.ceil(recentRecordsTotal / safePageSize)
+            : 1
 
     return {
         totalCalls,
@@ -1054,6 +1151,35 @@ export async function getLeaderboardStats(
                     totalUserCalls > 0 ? totalUserCost / totalUserCalls : 0,
             }
         }),
+        topModels: topModelsResult.rows.map((row) => ({
+            modelName: row.display_name || row.model_name,
+            totalCost: parseFloat(row.total_cost || '0'),
+            totalCalls: parseInt(row.total_calls || '0'),
+        })),
+        recentRecords: recordsResult.rows.map((row) => {
+            const isAnonymous = !row.leaderboard_show_name
+
+            return {
+                id: row.id,
+                useTime: row.use_time,
+                modelName: row.model_name,
+                totalTokens:
+                    parseInt(row.input_tokens || '0') +
+                    parseInt(row.output_tokens || '0'),
+                cost: parseFloat(row.cost || '0'),
+                balanceAfter: parseFloat(row.balance_after || '0'),
+                displayName: isAnonymous
+                    ? 'Anonymous'
+                    : row.leaderboard_nickname || row.name,
+                isAnonymous,
+            }
+        }),
+        recentRecordsPagination: {
+            page: safePage,
+            pageSize: safePageSize,
+            total: recentRecordsTotal,
+            totalPages: recentRecordsTotalPages,
+        },
         mostExpensiveCall,
     }
 }

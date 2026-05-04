@@ -18,6 +18,8 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url)
         const days = searchParams.get('days')
+        const page = searchParams.get('page')
+        const pageSize = searchParams.get('pageSize')
 
         let daysNum: number | undefined
         if (days) {
@@ -30,7 +32,29 @@ export async function GET(request: Request) {
             }
         }
 
-        const stats = await getLeaderboardStats(daysNum)
+        let pageNum = 1
+        if (page) {
+            pageNum = parseInt(page, 10)
+            if (isNaN(pageNum) || pageNum < 1) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid page parameter' },
+                    { status: 400 }
+                )
+            }
+        }
+
+        let pageSizeNum = 100
+        if (pageSize) {
+            pageSizeNum = parseInt(pageSize, 10)
+            if (isNaN(pageSizeNum) || pageSizeNum < 1) {
+                return NextResponse.json(
+                    { success: false, error: 'Invalid pageSize parameter' },
+                    { status: 400 }
+                )
+            }
+        }
+
+        const stats = await getLeaderboardStats(daysNum, pageNum, pageSizeNum)
 
         return NextResponse.json({ success: true, data: stats })
     } catch (error) {

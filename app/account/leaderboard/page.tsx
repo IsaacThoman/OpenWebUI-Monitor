@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type UIEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ECharts } from 'echarts'
 import ReactECharts from 'echarts-for-react'
-import { BarChart3, Clock, Crown, Loader2, Save } from 'lucide-react'
+import { BarChart3, Clock, Crown, Loader2, Save, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
@@ -75,6 +75,27 @@ interface LeaderboardResponse {
             totalCost: number
             averageCost: number
         }>
+        topModels: Array<{
+            modelName: string
+            totalCost: number
+            totalCalls: number
+        }>
+        recentRecords: Array<{
+            id: number
+            useTime: string
+            modelName: string
+            totalTokens: number
+            cost: number
+            balanceAfter: number
+            displayName: string
+            isAnonymous: boolean
+        }>
+        recentRecordsPagination: {
+            page: number
+            pageSize: number
+            total: number
+            totalPages: number
+        }
         mostExpensiveCall: MostExpensiveCall | null
     }
 }
@@ -82,12 +103,27 @@ interface LeaderboardResponse {
 type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
 type LeaderboardMetric = 'cost' | 'tokens' | 'calls' | 'water'
 
+const RECENT_RECORDS_PAGE_SIZE = 100
+
 function formatCurrency(value: number, currencySymbol: string): string {
     return `${currencySymbol}${value.toFixed(4)}`
 }
 
 function formatNumber(value: number): string {
     return value.toLocaleString()
+}
+
+function formatDate(value: string | null, fallback: string): string {
+    if (!value) {
+        return fallback
+    }
+    return new Date(value).toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+    })
 }
 
 function formatDateOnly(value: string | null, fallback: string): string {
@@ -332,6 +368,8 @@ export default function LeaderboardPage() {
     >(null)
     const [loadingAccount, setLoadingAccount] = useState(true)
     const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
+    const [recentRecordsLoadingMore, setRecentRecordsLoadingMore] =
+        useState(false)
     const [profileReady, setProfileReady] = useState(false)
     const [timeRange, setTimeRange] = useState<TimeRange>('30d')
     const [metric, setMetric] = useState<LeaderboardMetric>('cost')
@@ -346,6 +384,67 @@ export default function LeaderboardPage() {
     const currencySymbol = t('common.currency')
     const hasFetchedInitialLeaderboard = useRef(false)
     const chartRef = useRef<ECharts>()
+
+    const fetchLeaderboardData = useCallback(
+        async (page = 1, append = false) => {
+            if (append) {
+                setRecentRecordsLoadingMore(true)
+            } else {
+                setLoadingLeaderboard(true)
+            }
+
+            try {
+                const days = getDaysForRange(timeRange)
+                const params = new URLSearchParams({
+                    page: String(page),
+                    pageSize: String(RECENT_RECORDS_PAGE_SIZE),
+                })
+
+                if (days > 0) {
+                    params.set('days', String(days))
+                }
+
+                const response = await fetch(
+                    `/api/v1/user-portal/leaderboard?${params.toString()}`
+                )
+                const payload: LeaderboardResponse = await response.json()
+
+                if (response.status === 401) {
+                    router.replace('/account/login')
+                    return
+                }
+
+                if (!response.ok || !payload.data) {
+                    throw new Error(
+                        payload.error || t('userPortal.leaderboard.loadFailed')
+                    )
+                }
+
+                const nextData = payload.data
+
+                if (append) {
+                    setLeaderboardData((currentData) => ({
+                        ...nextData,
+                        recentRecords: [
+                            ...(currentData?.recentRecords || []),
+                            ...nextData.recentRecords,
+                        ],
+                    }))
+                } else {
+                    setLeaderboardData(nextData)
+                }
+
+                hasFetchedInitialLeaderboard.current = true
+            } finally {
+                if (append) {
+                    setRecentRecordsLoadingMore(false)
+                } else {
+                    setLoadingLeaderboard(false)
+                }
+            }
+        },
+        [router, t, timeRange]
+    )
 
     useEffect(() => {
         const loadAccount = async () => {
@@ -396,48 +495,14 @@ export default function LeaderboardPage() {
             return
         }
 
-        const loadLeaderboard = async () => {
-            setLoadingLeaderboard(true)
-
-            try {
-                const days = getDaysForRange(timeRange)
-                const params = new URLSearchParams()
-
-                if (days > 0) {
-                    params.set('days', String(days))
-                }
-
-                const response = await fetch(
-                    `/api/v1/user-portal/leaderboard?${params.toString()}`
-                )
-                const payload: LeaderboardResponse = await response.json()
-
-                if (response.status === 401) {
-                    router.replace('/account/login')
-                    return
-                }
-
-                if (!response.ok || !payload.data) {
-                    throw new Error(
-                        payload.error || t('userPortal.leaderboard.loadFailed')
-                    )
-                }
-
-                setLeaderboardData(payload.data)
-                hasFetchedInitialLeaderboard.current = true
-            } catch (error) {
-                toast.error(
-                    error instanceof Error
-                        ? error.message
-                        : t('userPortal.leaderboard.loadFailed')
-                )
-            } finally {
-                setLoadingLeaderboard(false)
-            }
-        }
-
-        loadLeaderboard()
-    }, [profileReady, router, t, timeRange])
+        fetchLeaderboardData().catch((error) => {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('userPortal.leaderboard.loadFailed')
+            )
+        })
+    }, [fetchLeaderboardData, profileReady, t])
 
     const sortedUsers = [...(leaderboardData?.users || [])].sort((a, b) => {
         const difference = getMetricValue(b, metric) - getMetricValue(a, metric)
@@ -451,6 +516,10 @@ export default function LeaderboardPage() {
             a.displayName.localeCompare(b.displayName)
         )
     })
+    const recentRecords = leaderboardData?.recentRecords || []
+    const recentRecordsTotal =
+        leaderboardData?.recentRecordsPagination.total || 0
+    const hasMoreRecentRecords = recentRecords.length < recentRecordsTotal
 
     useEffect(() => {
         const handleResize = () => {
@@ -523,22 +592,7 @@ export default function LeaderboardPage() {
             toast.success(t('userPortal.leaderboard.saveSuccess'))
 
             if (hasFetchedInitialLeaderboard.current) {
-                const days = getDaysForRange(timeRange)
-                const params = new URLSearchParams()
-
-                if (days > 0) {
-                    params.set('days', String(days))
-                }
-
-                const leaderboardResponse = await fetch(
-                    `/api/v1/user-portal/leaderboard?${params.toString()}`
-                )
-                const leaderboardPayload: LeaderboardResponse =
-                    await leaderboardResponse.json()
-
-                if (leaderboardResponse.ok && leaderboardPayload.data) {
-                    setLeaderboardData(leaderboardPayload.data)
-                }
+                await fetchLeaderboardData()
             }
         } catch (error) {
             toast.error(
@@ -548,6 +602,35 @@ export default function LeaderboardPage() {
             )
         } finally {
             setSaving(false)
+        }
+    }
+
+    const loadMoreRecentRecords = () => {
+        if (
+            loadingLeaderboard ||
+            recentRecordsLoadingMore ||
+            !hasMoreRecentRecords
+        ) {
+            return
+        }
+
+        fetchLeaderboardData(
+            (leaderboardData?.recentRecordsPagination.page || 1) + 1,
+            true
+        ).catch((error) => {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : t('userPortal.leaderboard.loadFailed')
+            )
+        })
+    }
+
+    const handleRecentRecordsScroll = (event: UIEvent<HTMLDivElement>) => {
+        const { clientHeight, scrollHeight, scrollTop } = event.currentTarget
+
+        if (scrollHeight - scrollTop - clientHeight < 160) {
+            loadMoreRecentRecords()
         }
     }
 
@@ -897,6 +980,161 @@ export default function LeaderboardPage() {
                             </div>
                         </>
                     )}
+                </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                    <div className="border" id="recent-usage">
+                        <div className="flex items-center justify-between border-b px-3 py-2">
+                            <div className="flex items-center gap-2">
+                                <Zap className="h-3 w-3" />
+                                <h2 className="text-xs font-medium">
+                                    Recent usage
+                                </h2>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                Showing {formatNumber(recentRecords.length)} of{' '}
+                                {formatNumber(recentRecordsTotal)} records
+                            </span>
+                        </div>
+
+                        {loadingLeaderboard && recentRecords.length === 0 ? (
+                            <div className="flex items-center justify-center gap-2 p-6 text-xs text-muted-foreground">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Loading usage
+                            </div>
+                        ) : recentRecords.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-muted-foreground">
+                                {t('userPortal.account.empty')}
+                            </div>
+                        ) : (
+                            <div
+                                className="max-h-96 overflow-auto"
+                                onScroll={handleRecentRecordsScroll}
+                            >
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-background">
+                                        <tr className="border-b text-left text-muted-foreground">
+                                            <th className="px-3 py-2 font-normal">
+                                                Time
+                                            </th>
+                                            <th className="px-3 py-2 font-normal">
+                                                Model
+                                            </th>
+                                            <th className="px-3 py-2 font-normal">
+                                                Tokens
+                                            </th>
+                                            <th className="px-3 py-2 font-normal">
+                                                Cost
+                                            </th>
+                                            <th className="px-3 py-2 font-normal">
+                                                User
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {recentRecords.map((record) => (
+                                            <tr key={record.id}>
+                                                <td className="px-3 py-2 text-xs text-muted-foreground">
+                                                    {formatDate(
+                                                        record.useTime,
+                                                        '-'
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <span
+                                                        className="block max-w-[150px] truncate"
+                                                        title={record.modelName}
+                                                    >
+                                                        {record.modelName}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    {formatNumber(
+                                                        record.totalTokens
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    {formatCurrency(
+                                                        record.cost,
+                                                        currencySymbol
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2">
+                                                    <span
+                                                        className="block max-w-[120px] truncate"
+                                                        title={record.displayName}
+                                                    >
+                                                        {record.displayName}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                {recentRecordsLoadingMore ? (
+                                    <div className="flex items-center justify-center gap-2 border-t px-3 py-3 text-xs text-muted-foreground">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Loading more
+                                    </div>
+                                ) : null}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div>
+                    <div className="border">
+                        <div className="flex items-center gap-2 border-b px-3 py-2">
+                            <BarChart3 className="h-3 w-3" />
+                            <h2 className="text-xs font-medium">Top models</h2>
+                        </div>
+
+                        {leaderboardData.topModels.length === 0 ? (
+                            <div className="p-6 text-center text-xs text-muted-foreground">
+                                {t('userPortal.account.empty')}
+                            </div>
+                        ) : (
+                            <div className="max-h-96 divide-y overflow-y-auto">
+                                {leaderboardData.topModels.map(
+                                    (model, index) => (
+                                        <div
+                                            key={model.modelName}
+                                            className="flex items-center justify-between gap-2 px-3 py-2"
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                <span className="flex h-4 w-4 shrink-0 items-center justify-center text-xs text-muted-foreground">
+                                                    {index + 1}
+                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p
+                                                        className="truncate text-xs"
+                                                        title={model.modelName}
+                                                    >
+                                                        {model.modelName}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {formatNumber(
+                                                            model.totalCalls
+                                                        )}{' '}
+                                                        calls
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="shrink-0 text-xs">
+                                                {formatCurrency(
+                                                    model.totalCost,
+                                                    currencySymbol
+                                                )}
+                                            </span>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
