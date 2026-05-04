@@ -1023,13 +1023,13 @@ export default function LeaderboardPage() {
                                                 Model
                                             </th>
                                             <th className="px-3 py-2 font-normal">
+                                                User
+                                            </th>
+                                            <th className="px-3 py-2 font-normal">
                                                 Tokens
                                             </th>
                                             <th className="px-3 py-2 font-normal">
                                                 Cost
-                                            </th>
-                                            <th className="px-3 py-2 font-normal">
-                                                User
                                             </th>
                                         </tr>
                                     </thead>
@@ -1051,6 +1051,14 @@ export default function LeaderboardPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-3 py-2">
+                                                    <span
+                                                        className="block max-w-[120px] truncate"
+                                                        title={record.displayName}
+                                                    >
+                                                        {record.displayName}
+                                                    </span>
+                                                </td>
+                                                <td className="px-3 py-2">
                                                     {formatNumber(
                                                         record.totalTokens
                                                     )}
@@ -1060,14 +1068,6 @@ export default function LeaderboardPage() {
                                                         record.cost,
                                                         currencySymbol
                                                     )}
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    <span
-                                                        className="block max-w-[120px] truncate"
-                                                        title={record.displayName}
-                                                    >
-                                                        {record.displayName}
-                                                    </span>
                                                 </td>
                                             </tr>
                                         ))}
