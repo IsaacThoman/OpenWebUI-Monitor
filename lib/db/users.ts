@@ -90,7 +90,33 @@ export interface LeaderboardStats {
     totalTokens: number
     totalCost: number
     averageCost: number
+    firstUseTime: string | null
+    lastUseTime: string | null
     users: LeaderboardEntry[]
+    dailyUsage: Array<{
+        date: string
+        totalCost: number
+        totalTokens: number
+        totalCalls: number
+        models: Array<{
+            name: string
+            cost: number
+            tokens: number
+            calls: number
+        }>
+    }>
+    contributionDailyUsage: Array<{
+        date: string
+        totalCost: number
+        totalTokens: number
+        totalCalls: number
+        models: Array<{
+            name: string
+            cost: number
+            tokens: number
+            calls: number
+        }>
+    }>
     topModels: Array<{
         modelName: string
         totalCost: number
@@ -994,7 +1020,8 @@ export async function getMostExpensiveCall(
 export async function getLeaderboardStats(
     days?: number,
     page = 1,
-    pageSize = 10
+    pageSize = 10,
+    timeZone = 'UTC'
 ): Promise<LeaderboardStats> {
     await ensureUserTableExists()
 
@@ -1014,6 +1041,11 @@ export async function getLeaderboardStats(
     const recordsLimitOffset = days
         ? 'LIMIT $2 OFFSET $3'
         : 'LIMIT $1 OFFSET $2'
+    const dailyUsageParams = days ? [timeZone, days] : [timeZone]
+    const dailyUsageTimeCondition = days
+        ? `AND DATE(r.use_time AT TIME ZONE $1) >= DATE(NOW() AT TIME ZONE $1) - ($2::integer - 1)`
+        : ''
+    const contributionDailyUsageParams = [timeZone]
 
     if (days) {
         queryParams.push(days)
@@ -1021,6 +1053,8 @@ export async function getLeaderboardStats(
 
     const [
         statsResult,
+        dailyUsageResult,
+        contributionDailyUsageResult,
         usersResult,
         topModelsResult,
         recordsCountResult,
@@ -1032,13 +1066,51 @@ export async function getLeaderboardStats(
           SELECT
             COALESCE(SUM(r.cost), 0) AS total_cost,
             COUNT(*) AS total_calls,
-            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens
+            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens,
+            MIN(r.use_time) AS first_use_time,
+            MAX(r.use_time) AS last_use_time
           FROM user_usage_records r
           INNER JOIN users u ON u.id = r.user_id
           WHERE (u.deleted = FALSE OR u.deleted IS NULL)
           ${timeCondition}
         `,
             queryParams
+        ),
+        query(
+            `
+          SELECT
+            DATE(r.use_time AT TIME ZONE $1) AS date,
+            COALESCE(mp.name, r.model_name) AS display_name,
+            COALESCE(SUM(r.cost), 0) AS total_cost,
+            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens,
+            COUNT(*) AS total_calls
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          LEFT JOIN model_prices mp ON r.model_name = mp.id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+          ${dailyUsageTimeCondition}
+          GROUP BY DATE(r.use_time AT TIME ZONE $1), COALESCE(mp.name, r.model_name)
+          ORDER BY DATE(r.use_time AT TIME ZONE $1) ASC, total_cost DESC
+        `,
+            dailyUsageParams
+        ),
+        query(
+            `
+          SELECT
+            DATE(r.use_time AT TIME ZONE $1) AS date,
+            COALESCE(mp.name, r.model_name) AS display_name,
+            COALESCE(SUM(r.cost), 0) AS total_cost,
+            COALESCE(SUM(r.input_tokens + r.output_tokens), 0) AS total_tokens,
+            COUNT(*) AS total_calls
+          FROM user_usage_records r
+          INNER JOIN users u ON u.id = r.user_id
+          LEFT JOIN model_prices mp ON r.model_name = mp.id
+          WHERE (u.deleted = FALSE OR u.deleted IS NULL)
+            AND DATE(r.use_time AT TIME ZONE $1) >= DATE(NOW() AT TIME ZONE $1) - 364
+          GROUP BY DATE(r.use_time AT TIME ZONE $1), COALESCE(mp.name, r.model_name)
+          ORDER BY DATE(r.use_time AT TIME ZONE $1) ASC, total_cost DESC
+        `,
+            contributionDailyUsageParams
         ),
         query(
             `
@@ -1121,12 +1193,95 @@ export async function getLeaderboardStats(
         recentRecordsTotal > 0
             ? Math.ceil(recentRecordsTotal / safePageSize)
             : 1
+    const buildDailyUsage = (
+        rows: Array<{
+            date: Date | string
+            display_name?: string
+            model_name?: string
+            total_cost?: string
+            total_tokens?: string
+            total_calls?: string
+        }>
+    ) => {
+        const dailyUsageMap = new Map<
+            string,
+            {
+                date: string
+                totalCost: number
+                totalTokens: number
+                totalCalls: number
+                models: Map<
+                    string,
+                    {
+                        name: string
+                        cost: number
+                        tokens: number
+                        calls: number
+                    }
+                >
+            }
+        >()
+
+        for (const row of rows) {
+            const date =
+                row.date instanceof Date
+                    ? row.date.toISOString().slice(0, 10)
+                    : String(row.date)
+            if (!dailyUsageMap.has(date)) {
+                dailyUsageMap.set(date, {
+                    date,
+                    totalCost: 0,
+                    totalTokens: 0,
+                    totalCalls: 0,
+                    models: new Map(),
+                })
+            }
+
+            const day = dailyUsageMap.get(date)!
+            const cost = parseFloat(row.total_cost || '0')
+            const tokens = parseInt(row.total_tokens || '0')
+            const calls = parseInt(row.total_calls || '0')
+            const modelName = row.display_name || row.model_name || 'Unknown'
+
+            day.totalCost += cost
+            day.totalTokens += tokens
+            day.totalCalls += calls
+
+            if (!day.models.has(modelName)) {
+                day.models.set(modelName, {
+                    name: modelName,
+                    cost: 0,
+                    tokens: 0,
+                    calls: 0,
+                })
+            }
+
+            const model = day.models.get(modelName)!
+            model.cost += cost
+            model.tokens += tokens
+            model.calls += calls
+        }
+
+        return Array.from(dailyUsageMap.values())
+            .sort((a, b) => compareDayKeys(a.date, b.date))
+            .map((day) => ({
+                date: day.date,
+                totalCost: day.totalCost,
+                totalTokens: day.totalTokens,
+                totalCalls: day.totalCalls,
+                models: Array.from(day.models.values()).sort(
+                    (a, b) => b.cost - a.cost
+                ),
+            }))
+    }
 
     return {
         totalCalls,
         totalTokens: parseInt(stats.total_tokens || '0'),
         totalCost,
         averageCost: totalCalls > 0 ? totalCost / totalCalls : 0,
+        firstUseTime: stats.first_use_time,
+        lastUseTime: stats.last_use_time,
         users: usersResult.rows.map((row) => {
             const totalUserCalls = parseInt(row.total_calls || '0')
             const totalUserCost = parseFloat(row.total_cost || '0')
@@ -1151,6 +1306,8 @@ export async function getLeaderboardStats(
                     totalUserCalls > 0 ? totalUserCost / totalUserCalls : 0,
             }
         }),
+        dailyUsage: buildDailyUsage(dailyUsageResult.rows),
+        contributionDailyUsage: buildDailyUsage(contributionDailyUsageResult.rows),
         topModels: topModelsResult.rows.map((row) => ({
             modelName: row.display_name || row.model_name,
             totalCost: parseFloat(row.total_cost || '0'),

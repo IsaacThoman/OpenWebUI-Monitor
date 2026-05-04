@@ -20,6 +20,7 @@ export async function GET(request: Request) {
         const days = searchParams.get('days')
         const page = searchParams.get('page')
         const pageSize = searchParams.get('pageSize')
+        const timeZone = searchParams.get('timezone') || 'UTC'
 
         let daysNum: number | undefined
         if (days) {
@@ -54,7 +55,12 @@ export async function GET(request: Request) {
             }
         }
 
-        const stats = await getLeaderboardStats(daysNum, pageNum, pageSizeNum)
+        const stats = await getLeaderboardStats(
+            daysNum,
+            pageNum,
+            pageSizeNum,
+            timeZone
+        )
 
         return NextResponse.json({ success: true, data: stats })
     } catch (error) {

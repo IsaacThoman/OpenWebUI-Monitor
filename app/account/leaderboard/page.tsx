@@ -8,6 +8,7 @@ import { BarChart3, Clock, Crown, Loader2, Save, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 
+import DailyUsageChart from '@/components/panel/DailyUsageChart'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -65,6 +66,8 @@ interface LeaderboardResponse {
         totalTokens: number
         totalCost: number
         averageCost: number
+        firstUseTime: string | null
+        lastUseTime: string | null
         users: Array<{
             userId: string
             displayName: string
@@ -74,6 +77,30 @@ interface LeaderboardResponse {
             totalTokens: number
             totalCost: number
             averageCost: number
+        }>
+        dailyUsage: Array<{
+            date: string
+            totalCost: number
+            totalTokens: number
+            totalCalls: number
+            models: Array<{
+                name: string
+                cost: number
+                tokens: number
+                calls: number
+            }>
+        }>
+        contributionDailyUsage: Array<{
+            date: string
+            totalCost: number
+            totalTokens: number
+            totalCalls: number
+            models: Array<{
+                name: string
+                cost: number
+                tokens: number
+                calls: number
+            }>
         }>
         topModels: Array<{
             modelName: string
@@ -167,6 +194,43 @@ function getDaysForRange(range: TimeRange): number {
             return 90
         case 'all':
             return 0
+    }
+}
+
+function getSelectedPeriodDayCount(
+    range: TimeRange,
+    firstUseTime: string | null
+): number {
+    switch (range) {
+        case '24h':
+            return 1
+        case '7d':
+            return 7
+        case '30d':
+            return 30
+        case '90d':
+            return 90
+        case 'all': {
+            if (!firstUseTime) {
+                return 0
+            }
+
+            const start = new Date(firstUseTime)
+            const today = new Date()
+            const startOfFirstDay = new Date(
+                start.getFullYear(),
+                start.getMonth(),
+                start.getDate()
+            )
+            const startOfToday = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                today.getDate()
+            )
+            const diffMs = startOfToday.getTime() - startOfFirstDay.getTime()
+
+            return Math.max(1, Math.floor(diffMs / 86400000) + 1)
+        }
     }
 }
 
@@ -379,6 +443,7 @@ export default function LeaderboardPage() {
         DEFAULT_LEADERBOARD_BAR_COLOR
     )
     const [saving, setSaving] = useState(false)
+    const [browserTimeZone, setBrowserTimeZone] = useState<string | null>(null)
     const router = useRouter()
     const { t } = useTranslation('common')
     const currencySymbol = t('common.currency')
@@ -398,6 +463,7 @@ export default function LeaderboardPage() {
                 const params = new URLSearchParams({
                     page: String(page),
                     pageSize: String(RECENT_RECORDS_PAGE_SIZE),
+                    timezone: browserTimeZone || 'UTC',
                 })
 
                 if (days > 0) {
@@ -443,8 +509,14 @@ export default function LeaderboardPage() {
                 }
             }
         },
-        [router, t, timeRange]
+        [browserTimeZone, router, t, timeRange]
     )
+
+    useEffect(() => {
+        setBrowserTimeZone(
+            Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+        )
+    }, [])
 
     useEffect(() => {
         const loadAccount = async () => {
@@ -491,7 +563,7 @@ export default function LeaderboardPage() {
     }, [router, t])
 
     useEffect(() => {
-        if (!profileReady) {
+        if (!profileReady || !browserTimeZone) {
             return
         }
 
@@ -502,7 +574,7 @@ export default function LeaderboardPage() {
                     : t('userPortal.leaderboard.loadFailed')
             )
         })
-    }, [fetchLeaderboardData, profileReady, t])
+    }, [browserTimeZone, fetchLeaderboardData, profileReady, t])
 
     const sortedUsers = [...(leaderboardData?.users || [])].sort((a, b) => {
         const difference = getMetricValue(b, metric) - getMetricValue(a, metric)
@@ -520,6 +592,12 @@ export default function LeaderboardPage() {
     const recentRecordsTotal =
         leaderboardData?.recentRecordsPagination.total || 0
     const hasMoreRecentRecords = recentRecords.length < recentRecordsTotal
+    const dailyUsageMetric: 'cost' | 'tokens' | 'calls' =
+        metric === 'water' ? 'cost' : metric
+    const selectedPeriodDayCount = getSelectedPeriodDayCount(
+        timeRange,
+        leaderboardData?.firstUseTime ?? null
+    )
 
     useEffect(() => {
         const handleResize = () => {
@@ -983,6 +1061,96 @@ export default function LeaderboardPage() {
                 </div>
             </div>
 
+            {/* Most Expensive Call Section */}
+            {leaderboardData?.mostExpensiveCall && (
+                <div className="mb-4">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                        <Crown className="h-4 w-4 text-yellow-500" />
+                        <h2 className="text-sm font-medium">
+                            {t('userPortal.leaderboard.mostExpensive.title')}
+                        </h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 md:gap-0 md:divide-x">
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.user')}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {leaderboardData.mostExpensiveCall.isAnonymous
+                                    ? t('userPortal.leaderboard.anonymous')
+                                    : leaderboardData.mostExpensiveCall
+                                          .displayName}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t(
+                                    'userPortal.leaderboard.mostExpensive.model'
+                                )}
+                            </p>
+                            <p
+                                className="text-lg font-medium truncate"
+                                title={
+                                    leaderboardData.mostExpensiveCall.modelName
+                                }
+                            >
+                                {leaderboardData.mostExpensiveCall.modelName
+                                    .length > 20
+                                    ? `${leaderboardData.mostExpensiveCall.modelName.slice(0, 20)}...`
+                                    : leaderboardData.mostExpensiveCall
+                                          .modelName}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t(
+                                    'userPortal.leaderboard.mostExpensive.tokens'
+                                )}
+                            </p>
+                            <p className="text-lg font-medium">
+                                {formatNumber(
+                                    leaderboardData.mostExpensiveCall
+                                        .totalTokens
+                                )}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.cost')}
+                            </p>
+                            <p className="text-lg font-medium text-yellow-500">
+                                {formatCurrency(
+                                    leaderboardData.mostExpensiveCall.cost,
+                                    currencySymbol
+                                )}
+                            </p>
+                        </div>
+                        <div className="p-3">
+                            <p className="text-xs text-muted-foreground mb-1">
+                                {t('userPortal.leaderboard.mostExpensive.time')}
+                            </p>
+                            <p className="text-sm font-medium">
+                                {formatDateOnly(
+                                    leaderboardData.mostExpensiveCall.useTime,
+                                    '-'
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="mb-4">
+                <DailyUsageChart
+                    loading={loadingLeaderboard}
+                    data={leaderboardData.dailyUsage}
+                    periodDayCount={selectedPeriodDayCount}
+                    metric={dailyUsageMetric}
+                    contributionData={leaderboardData.contributionDailyUsage}
+                    contributionLoading={loadingLeaderboard}
+                />
+            </div>
+
             <div className="grid gap-4 lg:grid-cols-3">
                 <div className="lg:col-span-2">
                     <div className="border" id="recent-usage">
@@ -1137,85 +1305,6 @@ export default function LeaderboardPage() {
                     </div>
                 </div>
             </div>
-
-            {/* Most Expensive Call Section */}
-            {leaderboardData?.mostExpensiveCall && (
-                <div className="mb-4">
-                    <div className="flex items-center gap-2 px-3 py-2">
-                        <Crown className="h-4 w-4 text-yellow-500" />
-                        <h2 className="text-sm font-medium">
-                            {t('userPortal.leaderboard.mostExpensive.title')}
-                        </h2>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1 md:gap-0 md:divide-x">
-                        <div className="p-3">
-                            <p className="text-xs text-muted-foreground mb-1">
-                                {t('userPortal.leaderboard.mostExpensive.user')}
-                            </p>
-                            <p className="text-lg font-medium">
-                                {leaderboardData.mostExpensiveCall.isAnonymous
-                                    ? t('userPortal.leaderboard.anonymous')
-                                    : leaderboardData.mostExpensiveCall
-                                          .displayName}
-                            </p>
-                        </div>
-                        <div className="p-3">
-                            <p className="text-xs text-muted-foreground mb-1">
-                                {t(
-                                    'userPortal.leaderboard.mostExpensive.model'
-                                )}
-                            </p>
-                            <p
-                                className="text-lg font-medium truncate"
-                                title={
-                                    leaderboardData.mostExpensiveCall.modelName
-                                }
-                            >
-                                {leaderboardData.mostExpensiveCall.modelName
-                                    .length > 20
-                                    ? `${leaderboardData.mostExpensiveCall.modelName.slice(0, 20)}...`
-                                    : leaderboardData.mostExpensiveCall
-                                          .modelName}
-                            </p>
-                        </div>
-                        <div className="p-3">
-                            <p className="text-xs text-muted-foreground mb-1">
-                                {t(
-                                    'userPortal.leaderboard.mostExpensive.tokens'
-                                )}
-                            </p>
-                            <p className="text-lg font-medium">
-                                {formatNumber(
-                                    leaderboardData.mostExpensiveCall
-                                        .totalTokens
-                                )}
-                            </p>
-                        </div>
-                        <div className="p-3">
-                            <p className="text-xs text-muted-foreground mb-1">
-                                {t('userPortal.leaderboard.mostExpensive.cost')}
-                            </p>
-                            <p className="text-lg font-medium text-yellow-500">
-                                {formatCurrency(
-                                    leaderboardData.mostExpensiveCall.cost,
-                                    currencySymbol
-                                )}
-                            </p>
-                        </div>
-                        <div className="p-3">
-                            <p className="text-xs text-muted-foreground mb-1">
-                                {t('userPortal.leaderboard.mostExpensive.time')}
-                            </p>
-                            <p className="text-sm font-medium">
-                                {formatDateOnly(
-                                    leaderboardData.mostExpensiveCall.useTime,
-                                    '-'
-                                )}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }
