@@ -469,7 +469,8 @@
                 "metrics": {
                     "usd": "USD",
                     "tokens": "Tokens",
-                    "calls": "调用"
+                    "calls": "调用",
+                    "balance": "余额"
                 }
             },
             "table": {

@@ -73,6 +73,7 @@ interface LeaderboardResponse {
             displayName: string
             isAnonymous: boolean
             leaderboardColor: string | null
+            balance: number
             totalCalls: number
             totalTokens: number
             totalCost: number
@@ -128,7 +129,7 @@ interface LeaderboardResponse {
 }
 
 type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
-type LeaderboardMetric = 'cost' | 'tokens' | 'calls' | 'water'
+type LeaderboardMetric = 'cost' | 'tokens' | 'calls' | 'balance' | 'water'
 
 const RECENT_RECORDS_PAGE_SIZE = 100
 
@@ -259,6 +260,10 @@ function getMetricValue(
         return user.totalCalls
     }
 
+    if (metric === 'balance') {
+        return user.balance
+    }
+
     if (metric === 'water') {
         return user.totalCost / 23.04
     }
@@ -271,7 +276,7 @@ function formatMetricValue(
     metric: LeaderboardMetric,
     currencySymbol: string
 ): string {
-    if (metric === 'cost') {
+    if (metric === 'cost' || metric === 'balance') {
         return formatCurrency(value, currencySymbol)
     }
 
@@ -315,7 +320,7 @@ function getLeaderboardChartOption(
           <div class="flex flex-col gap-1">
             <div class="font-medium" style="color: hsl(220 15% 90%)">#${dataIndex + 1} ${user.displayName}</div>
             <div class="flex items-center gap-2">
-              <span class="text-xs" style="color: hsl(220 15% 55%)">${metric === 'cost' ? 'USD' : metric === 'tokens' ? 'Tokens' : metric === 'water' ? 'Water' : 'Calls'}</span>
+              <span class="text-xs" style="color: hsl(220 15% 55%)">${metric === 'cost' ? 'USD' : metric === 'tokens' ? 'Tokens' : metric === 'balance' ? 'Balance' : metric === 'water' ? 'Water' : 'Calls'}</span>
               <span class="font-mono text-sm font-medium" style="color: hsl(220 15% 90%)">${formatMetricValue(value, metric, currencySymbol)}</span>
             </div>
           </div>
@@ -593,7 +598,7 @@ export default function LeaderboardPage() {
         leaderboardData?.recentRecordsPagination.total || 0
     const hasMoreRecentRecords = recentRecords.length < recentRecordsTotal
     const dailyUsageMetric: 'cost' | 'tokens' | 'calls' =
-        metric === 'water' ? 'cost' : metric
+        metric === 'water' || metric === 'balance' ? 'cost' : metric
     const selectedPeriodDayCount = getSelectedPeriodDayCount(
         timeRange,
         leaderboardData?.firstUseTime ?? null
@@ -883,6 +888,18 @@ export default function LeaderboardPage() {
                             >
                                 {t(
                                     'userPortal.leaderboard.chart.metrics.calls'
+                                )}
+                            </Button>
+                            <Button
+                                variant={
+                                    metric === 'balance' ? 'default' : 'outline'
+                                }
+                                size="sm"
+                                className="h-6 text-xs px-2"
+                                onClick={() => setMetric('balance')}
+                            >
+                                {t(
+                                    'userPortal.leaderboard.chart.metrics.balance'
                                 )}
                             </Button>
                             <Button

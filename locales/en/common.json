@@ -467,7 +467,8 @@
                 "metrics": {
                     "usd": "USD",
                     "tokens": "Tokens",
-                    "calls": "Calls"
+                    "calls": "Calls",
+                    "balance": "Balance"
                 }
             },
             "table": {

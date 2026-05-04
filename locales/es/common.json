@@ -469,7 +469,8 @@
                 "metrics": {
                     "usd": "USD",
                     "tokens": "Tokens",
-                    "calls": "Llamadas"
+                    "calls": "Llamadas",
+                    "balance": "Saldo"
                 }
             },
             "table": {

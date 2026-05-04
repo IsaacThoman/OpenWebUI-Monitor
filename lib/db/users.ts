@@ -79,6 +79,7 @@ export interface LeaderboardEntry {
     displayName: string
     isAnonymous: boolean
     leaderboardColor: string | null
+    balance: number
     totalCalls: number
     totalTokens: number
     totalCost: number
@@ -1117,6 +1118,7 @@ export async function getLeaderboardStats(
           SELECT
             u.id,
             u.name,
+            u.balance,
             COALESCE(u.leaderboard_show_name, FALSE) AS leaderboard_show_name,
             NULLIF(BTRIM(u.leaderboard_nickname), '') AS leaderboard_nickname,
             u.leaderboard_color,
@@ -1127,7 +1129,7 @@ export async function getLeaderboardStats(
           INNER JOIN users u ON u.id = r.user_id
           WHERE (u.deleted = FALSE OR u.deleted IS NULL)
           ${timeCondition}
-          GROUP BY u.id, u.name, u.leaderboard_show_name, u.leaderboard_nickname, u.leaderboard_color
+          GROUP BY u.id, u.name, u.balance, u.leaderboard_show_name, u.leaderboard_nickname, u.leaderboard_color
           ORDER BY total_cost DESC, total_calls DESC, u.name ASC
         `,
             queryParams
@@ -1299,6 +1301,7 @@ export async function getLeaderboardStats(
                     : row.leaderboard_nickname || row.name,
                 isAnonymous,
                 leaderboardColor,
+                balance: parseFloat(row.balance || '0'),
                 totalCalls: totalUserCalls,
                 totalTokens: parseInt(row.total_tokens || '0'),
                 totalCost: totalUserCost,
