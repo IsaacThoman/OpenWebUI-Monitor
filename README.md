@@ -25,6 +25,36 @@ A monitoring dashboard for OpenWebUI that tracks usage and manages user balances
 
 Supports one-click deployment on Vercel [![Deploy on Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FVariantConst%2FOpenWebUI-Monitor&project-name=openwebui-monitor&repository-name=openwebui-monitor&env=OPENWEBUI_DOMAIN,OPENWEBUI_API_KEY,ACCESS_TOKEN,API_KEY) and Docker deployment. **See [Deployment Guide](https://github.com/VariantConst/OpenWebUI-Monitor/blob/main/resources/tutorials/en/deployment_guide.md) for details. See [Deployment Guide](https://github.com/VariantConst/OpenWebUI-Monitor/blob/main/resources/tutorials/en/deployment_guide.md) for details. See [Deployment Guide](https://github.com/VariantConst/OpenWebUI-Monitor/blob/main/resources/tutorials/en/deployment_guide.md) for details.**
 
+## Development (Docker)
+
+For local development with hot reload, use the dev compose configuration. This mounts your local source code into the container and enables hot reload.
+
+**Prerequisites:**
+- Docker and Docker Compose
+- Your `.env` file configured (see Environment Variables above)
+
+**Run in dev mode:**
+
+```bash
+# Start with dev configuration (port 3000 is exposed)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+**Access the app:**
+- Your local machine: `http://localhost:3000`
+- Other devices on your LAN: `http://<your-machine-ip>:3000`
+
+To find your machine's IP:
+- macOS: `ipconfig getifaddr en0`
+- Linux: `hostname -I`
+
+**Features:**
+- Hot reload enabled (changes to source files automatically refresh the browser)
+- Source code is mounted from your local directory
+- Polling-based file watching (works inside Docker on macOS)
+
+**Note:** Changes to configuration files (`.env`, `next.config.js`) or adding new npm packages require restarting the container.
+
 ## Updates
 
 For Vercel, sync fork and redeploy your project. For Docker, simply pull the latest image and restart the container:
