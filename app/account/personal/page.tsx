@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type UIEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, Clock, Info, Loader2, Zap } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,29 +8,12 @@ import { useTranslation } from 'react-i18next'
 
 import DailyUsageChart from '@/components/panel/DailyUsageChart'
 import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 interface UserPortalResponse {
     success: boolean
     error?: string
@@ -62,9 +45,8 @@ interface TimeWindowStats {
 }
 
 type TimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
-type PaginationItemType = number | 'ellipsis'
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50]
+const RECENT_RECORDS_PAGE_SIZE = 100
 
 function formatCurrency(value: number, currencySymbol: string): string {
     return `${currencySymbol}${value.toFixed(4)}`
@@ -153,40 +135,6 @@ function getSelectedPeriodDayCount(
     }
 }
 
-function getPaginationItems(
-    currentPage: number,
-    totalPages: number
-): PaginationItemType[] {
-    if (totalPages <= 5) {
-        return Array.from({ length: totalPages }, (_, index) => index + 1)
-    }
-
-    if (currentPage <= 3) {
-        return [1, 2, 3, 4, 'ellipsis', totalPages]
-    }
-
-    if (currentPage >= totalPages - 2) {
-        return [
-            1,
-            'ellipsis',
-            totalPages - 3,
-            totalPages - 2,
-            totalPages - 1,
-            totalPages,
-        ]
-    }
-
-    return [
-        1,
-        'ellipsis',
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-        'ellipsis',
-        totalPages,
-    ]
-}
-
 export default function PersonalPage() {
     const [data, setData] = useState<UserPortalResponse['data'] | null>(null)
     const [loading, setLoading] = useState(true)
@@ -209,9 +157,9 @@ export default function PersonalPage() {
         }>
     >([])
     const [recentRecordsPage, setRecentRecordsPage] = useState(1)
-    const [recentRecordsPageSize, setRecentRecordsPageSize] = useState(10)
     const [recentRecordsTotal, setRecentRecordsTotal] = useState(0)
-    const [recentRecordsTotalPages, setRecentRecordsTotalPages] = useState(1)
+    const [recentRecordsLoadingMore, setRecentRecordsLoadingMore] =
+        useState(false)
     const [topModels, setTopModels] = useState<
         Array<{
             modelName: string
@@ -295,8 +243,13 @@ export default function PersonalPage() {
     }, [router, t])
 
     const fetchTimeRangeStats = useCallback(
-        async (range: TimeRange, page: number, pageSize: number) => {
-            setStatsLoading(true)
+        async (range: TimeRange, page: number, append = false) => {
+            if (append) {
+                setRecentRecordsLoadingMore(true)
+            } else {
+                setStatsLoading(true)
+            }
+
             try {
                 let days: number
                 switch (range) {
@@ -321,7 +274,7 @@ export default function PersonalPage() {
 
                 const params = new URLSearchParams({
                     page: String(page),
-                    pageSize: String(pageSize),
+                    pageSize: String(RECENT_RECORDS_PAGE_SIZE),
                 })
 
                 if (days > 0) {
@@ -337,26 +290,38 @@ export default function PersonalPage() {
 
                 const result = await response.json()
                 if (result.data) {
-                    setStats({
-                        totalCalls: result.data.totalCalls || 0,
-                        totalTokens: result.data.totalTokens || 0,
-                        totalCost: result.data.totalCost || 0,
-                        averageCost: result.data.averageCost || 0,
-                    })
-                    setRecentRecords(result.data.recentRecords || [])
+                    const nextRecords = result.data.recentRecords || []
+
+                    if (append) {
+                        setRecentRecords((currentRecords) => [
+                            ...currentRecords,
+                            ...nextRecords,
+                        ])
+                    } else {
+                        setStats({
+                            totalCalls: result.data.totalCalls || 0,
+                            totalTokens: result.data.totalTokens || 0,
+                            totalCost: result.data.totalCost || 0,
+                            averageCost: result.data.averageCost || 0,
+                        })
+                        setRecentRecords(nextRecords)
+                        setTopModels(result.data.topModels || [])
+                        setDailyUsage(result.data.dailyUsage || [])
+                    }
+
+                    setRecentRecordsPage(page)
                     setRecentRecordsTotal(
                         result.data.recentRecordsPagination?.total || 0
                     )
-                    setRecentRecordsTotalPages(
-                        result.data.recentRecordsPagination?.totalPages || 1
-                    )
-                    setTopModels(result.data.topModels || [])
-                    setDailyUsage(result.data.dailyUsage || [])
                 }
             } catch {
                 // Keep existing stats on error
             } finally {
-                setStatsLoading(false)
+                if (append) {
+                    setRecentRecordsLoadingMore(false)
+                } else {
+                    setStatsLoading(false)
+                }
             }
         },
         [browserTimeZone]
@@ -367,14 +332,8 @@ export default function PersonalPage() {
             return
         }
 
-        fetchTimeRangeStats(timeRange, recentRecordsPage, recentRecordsPageSize)
-    }, [
-        browserTimeZone,
-        fetchTimeRangeStats,
-        timeRange,
-        recentRecordsPage,
-        recentRecordsPageSize,
-    ])
+        fetchTimeRangeStats(timeRange, 1)
+    }, [browserTimeZone, fetchTimeRangeStats, timeRange])
 
     // Fetch full year of daily data for the contribution graph
     useEffect(() => {
@@ -408,43 +367,44 @@ export default function PersonalPage() {
         fetchContributionData()
     }, [browserTimeZone])
 
-    const paginationItems = getPaginationItems(
-        recentRecordsPage,
-        recentRecordsTotalPages
-    )
     const selectedPeriodDayCount = getSelectedPeriodDayCount(
         timeRange,
         data?.overview.firstUseTime ?? null
     )
-    const recentRecordsStart =
-        recentRecordsTotal === 0
-            ? 0
-            : (recentRecordsPage - 1) * recentRecordsPageSize + 1
-    const recentRecordsEnd =
-        recentRecordsTotal === 0
-            ? 0
-            : recentRecordsStart + recentRecords.length - 1
+    const hasMoreRecentRecords = recentRecords.length < recentRecordsTotal
 
     const handleTimeRangeChange = (nextRange: TimeRange) => {
         setTimeRange(nextRange)
         setRecentRecordsPage(1)
+        setRecentRecords([])
+        setRecentRecordsTotal(0)
     }
 
-    const handleRecentRecordsPageSizeChange = (value: string) => {
-        setRecentRecordsPageSize(Number(value))
-        setRecentRecordsPage(1)
-    }
-
-    const handleRecentRecordsPageChange = (page: number) => {
+    const loadMoreRecentRecords = useCallback(() => {
         if (
-            page < 1 ||
-            page > recentRecordsTotalPages ||
-            page === recentRecordsPage
+            statsLoading ||
+            recentRecordsLoadingMore ||
+            !hasMoreRecentRecords
         ) {
             return
         }
 
-        setRecentRecordsPage(page)
+        fetchTimeRangeStats(timeRange, recentRecordsPage + 1, true)
+    }, [
+        fetchTimeRangeStats,
+        hasMoreRecentRecords,
+        recentRecordsLoadingMore,
+        recentRecordsPage,
+        statsLoading,
+        timeRange,
+    ])
+
+    const handleRecentRecordsScroll = (event: UIEvent<HTMLDivElement>) => {
+        const { clientHeight, scrollHeight, scrollTop } = event.currentTarget
+
+        if (scrollHeight - scrollTop - clientHeight < 160) {
+            loadMoreRecentRecords()
+        }
     }
 
     if (loading || !data) {
@@ -684,18 +644,27 @@ export default function PersonalPage() {
                                 </h2>
                             </div>
                             <span className="text-xs text-muted-foreground">
+                                Showing {formatNumber(recentRecords.length)} of{' '}
                                 {formatNumber(recentRecordsTotal)} records
                             </span>
                         </div>
 
-                        {recentRecords.length === 0 ? (
+                        {statsLoading && recentRecords.length === 0 ? (
+                            <div className="flex items-center justify-center gap-2 p-6 text-xs text-muted-foreground">
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                                Loading usage
+                            </div>
+                        ) : recentRecords.length === 0 ? (
                             <div className="p-6 text-center text-xs text-muted-foreground">
                                 {t('userPortal.account.empty')}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
+                            <div
+                                className="max-h-96 overflow-auto"
+                                onScroll={handleRecentRecordsScroll}
+                            >
                                 <table className="w-full text-xs">
-                                    <thead>
+                                    <thead className="sticky top-0 bg-background">
                                         <tr className="border-b text-left text-muted-foreground">
                                             <th className="px-3 py-2 font-normal">
                                                 Time
@@ -752,109 +721,15 @@ export default function PersonalPage() {
                                         ))}
                                     </tbody>
                                 </table>
+
+                                {recentRecordsLoadingMore ? (
+                                    <div className="flex items-center justify-center gap-2 border-t px-3 py-3 text-xs text-muted-foreground">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Loading more
+                                    </div>
+                                ) : null}
                             </div>
                         )}
-
-                        <div className="flex flex-col gap-3 border-t px-3 py-3 text-xs sm:flex-row sm:items-center sm:justify-between">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">
-                                        Rows per page
-                                    </span>
-                                    <Select
-                                        value={String(recentRecordsPageSize)}
-                                        onValueChange={
-                                            handleRecentRecordsPageSizeChange
-                                        }
-                                    >
-                                        <SelectTrigger className="h-8 w-[84px] text-xs">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {PAGE_SIZE_OPTIONS.map((size) => (
-                                                <SelectItem
-                                                    key={size}
-                                                    value={String(size)}
-                                                >
-                                                    {size}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <span className="text-muted-foreground">
-                                    {recentRecordsStart}-{recentRecordsEnd} of{' '}
-                                    {formatNumber(recentRecordsTotal)}
-                                </span>
-                            </div>
-
-                            {recentRecordsTotalPages > 1 ? (
-                                <Pagination className="mx-0 w-auto justify-start sm:justify-end">
-                                    <PaginationContent className="flex-wrap justify-start sm:justify-end">
-                                        <PaginationItem>
-                                            <PaginationPrevious
-                                                href="#recent-usage"
-                                                onClick={(event) => {
-                                                    event.preventDefault()
-                                                    handleRecentRecordsPageChange(
-                                                        recentRecordsPage - 1
-                                                    )
-                                                }}
-                                                className={cn(
-                                                    'h-8 text-xs',
-                                                    recentRecordsPage === 1 &&
-                                                        'pointer-events-none opacity-50'
-                                                )}
-                                            />
-                                        </PaginationItem>
-                                        {paginationItems.map((item, index) => (
-                                            <PaginationItem
-                                                key={`${item}-${index}`}
-                                            >
-                                                {item === 'ellipsis' ? (
-                                                    <PaginationEllipsis />
-                                                ) : (
-                                                    <PaginationLink
-                                                        href="#recent-usage"
-                                                        isActive={
-                                                            item ===
-                                                            recentRecordsPage
-                                                        }
-                                                        size="icon"
-                                                        className="h-8 w-8 text-xs"
-                                                        onClick={(event) => {
-                                                            event.preventDefault()
-                                                            handleRecentRecordsPageChange(
-                                                                item
-                                                            )
-                                                        }}
-                                                    >
-                                                        {item}
-                                                    </PaginationLink>
-                                                )}
-                                            </PaginationItem>
-                                        ))}
-                                        <PaginationItem>
-                                            <PaginationNext
-                                                href="#recent-usage"
-                                                onClick={(event) => {
-                                                    event.preventDefault()
-                                                    handleRecentRecordsPageChange(
-                                                        recentRecordsPage + 1
-                                                    )
-                                                }}
-                                                className={cn(
-                                                    'h-8 text-xs',
-                                                    recentRecordsPage ===
-                                                        recentRecordsTotalPages &&
-                                                        'pointer-events-none opacity-50'
-                                                )}
-                                            />
-                                        </PaginationItem>
-                                    </PaginationContent>
-                                </Pagination>
-                            ) : null}
-                        </div>
                     </div>
                 </div>
 
